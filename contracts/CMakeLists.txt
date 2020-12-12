@@ -6,4 +6,4 @@ set(EOSIO_WASM_OLD_BEHAVIOR "Off")
 find_package(eosio.cdt)
 
 add_subdirectory(arbitrage)
-add_subdirectory(limit order)
+add_subdirectory(limit)
