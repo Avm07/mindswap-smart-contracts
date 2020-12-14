@@ -14,6 +14,17 @@ struct [[eosio::contract("limit"), eosio::table]] market {
 		return id;
 	}
 
+	std::string ext_sym_to_string(const extended_symbol &token) const {
+		std::string str = token.get_symbol().code().to_string() + "@" + token.get_contract().to_string();
+		return str;
+	}
+
+	checksum256 pair_hash_key() const {
+		std::string str = ext_sym_to_string(token1) + "/" + ext_sym_to_string(token2);
+		return sha256(str.data(), str.size());
+	}
+
     EOSLIB_SERIALIZE(market, (id)(token1)(token2)(availiable_ord_id))
 };
-using markets = multi_index<name("markets"), market>;
+using by_pair_hash = indexed_by<name("bypair"), const_mem_fun<order, checksum256, &order::pair_hash_key>>;
+using markets = multi_index<name("markets"), market, by_pair_hash>;

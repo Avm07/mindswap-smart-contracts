@@ -1,8 +1,10 @@
 #pragma once
-#include <eosio/asset.hpp>
 #include <eosio/eosio.hpp>
+#include <eosio/asset.hpp>
 
-class [[eosio::contract]] limit : public eosio::contract {
+using namespace eosio;
+
+class [[eosio::contract("limit")]] limit : public eosio::contract {
 public:
 	limit(name receiver, name code, datastream<const char*> ds);
 
@@ -12,9 +14,9 @@ public:
 	[[eosio::action("rmvmarket")]] void remove_market(const uint64_t& id, const extended_symbol& token1, const extended_symbol& token2);
 
 	//For managing virtual balances
-	[[eosio::action("open")]] void open_account(const name& owner, const extended_symbol& symbol, const name& ram_payer);
+	[[eosio::action("open")]] void open_account(const name& owner, const extended_symbol& token, const name& ram_payer);
 
-	[[eosio::action("close")]] void close_account(const name& owner, const extended_symbol& symbol);
+	[[eosio::action("close")]] void close_account(const name& owner, const extended_symbol& token);
 
 	[[eosio::action("deposit")]] void deposit(const name& to, const extended_asset& quantity, const std::string& memo);
 
