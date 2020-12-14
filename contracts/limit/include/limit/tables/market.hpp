@@ -26,5 +26,5 @@ struct [[eosio::contract("limit"), eosio::table]] market {
 
     EOSLIB_SERIALIZE(market, (id)(token1)(token2)(availiable_ord_id))
 };
-using by_pair_hash = indexed_by<name("bypair"), const_mem_fun<order, checksum256, &order::pair_hash_key>>;
+using by_pair_hash = indexed_by<name("bypair"), const_mem_fun<market, checksum256, &market::pair_hash_key>>;
 using markets = multi_index<name("markets"), market, by_pair_hash>;

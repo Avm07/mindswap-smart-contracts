@@ -22,4 +22,5 @@ struct [[eosio::contract("limit"), eosio::table]] deposit {
 
 	EOSLIB_SERIALIZE(deposit, (id)(contract)(balance)(balance_in_orders))
 };
-using deposits = multi_index<name("deposits"), deposit>;
+using by_token_hash = indexed_by<name("bytoken"), const_mem_fun<deposit, checksum256, &deposit::token_hash_key>>;
+using deposits = multi_index<name("deposits"), deposit, by_token_hash>;
