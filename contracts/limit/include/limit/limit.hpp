@@ -33,8 +33,10 @@ private:
 	void sub_balance_in_orders(const name& owner, const extended_asset& value);
 	void add_balance_in_orders(const name& owner, const extended_asset& value, const name& ram_payer);
 
-	void add_market(const extended_symbol& token1, const extended_symbol& token2, const name& ram_payer);
+	uint64_t add_market(const extended_symbol& token1, const extended_symbol& token2, const name& ram_payer);
 	void remove_market(const extended_symbol& token1, const extended_symbol& token2);
+
+	uint64_t get_new_ord_id(const uint64_t& market_id);
 
 	std::string to_string(const extended_symbol& token);
 	checksum256 to_token_hash_key(const extended_symbol& token);

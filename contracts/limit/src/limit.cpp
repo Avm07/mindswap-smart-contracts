@@ -51,10 +51,47 @@ void limit::withdraw(const name& from, const name& to, const extended_asset& qua
 
 void limit::create_limit_buy(const name& owner, const extended_asset& volume, const extended_asset& price) {
 	require_auth(owner);
+
+	extended_asset amount(price.quantity * volume.quantity.amount, price.contract);
+	sub_balance(owner, amount);
+	add_balance_in_orders(owner, amount, owner);
+
+	auto market_id = add_market(volume.get_extended_symbol(), price.get_extended_symbol(), owner);
+	check(market_id != 0, "add_market: cannot add market");
+
+	auto ord_id = get_new_ord_id(market_id);
+
+	buy_orders _buy_orders(get_self(), market_id);
+
+	_buy_orders.emplace(owner, [&](auto& a) {
+		a.id = ord_id;
+		a.owner = owner;
+		a.volume = volume.quantity;
+		a.balance = volume.quantity;
+		a.price = price.quantity;
+		a.creation_date = current_time_point();
+	});
 }
 
 void limit::create_limit_sell(const name& owner, const extended_asset& volume, const extended_asset& price) {
 	require_auth(owner);
+
+	sub_balance(owner, volume);
+	add_balance_in_orders(owner, volume, owner);
+
+	auto market_id = add_market(volume.get_extended_symbol(), price.get_extended_symbol(), owner);
+	auto ord_id = get_new_ord_id(market_id);
+
+	sell_orders _sell_orders(get_self(), market_id);
+
+	_sell_orders.emplace(owner, [&](auto& a) {
+		a.id = ord_id;
+		a.owner = owner;
+		a.volume = volume.quantity;
+		a.balance = volume.quantity;
+		a.price = price.quantity;
+		a.creation_date = current_time_point();
+	});
 }
 
 void limit::sub_balance(const name& owner, const extended_asset& value) {
@@ -115,41 +152,60 @@ void limit::add_balance_in_orders(const name& owner, const extended_asset& value
 	}
 }
 
-void limit::add_market(const extended_symbol& token1, const extended_symbol& token2, const name& ram_payer) {
+uint64_t limit::add_market(const extended_symbol& token1, const extended_symbol& token2, const name& ram_payer) {
 	markets _markets(get_self(), get_self().value);
 
 	auto index = _markets.get_index<name("bypair")>();
-    auto hash1 = to_pair_hash_key(token1, token2);
-    auto hash2 = to_pair_hash_key(token2, token1);
+	auto hash1 = to_pair_hash_key(token1, token2);
+	auto hash2 = to_pair_hash_key(token2, token1);
 
 	auto it1 = index.find(hash1);
-    auto it2 = index.find(hash2);
+	auto it2 = index.find(hash2);
 
 	if (it1 == index.end() && it2 == index.end()) {
+		auto id = _markets.available_primary_key();
+
 		_markets.emplace(ram_payer, [&](auto& a) {
-			a.id = _markets.available_primary_key();
+			a.id = id;
 			a.token1 = token1;
 			a.token2 = token2;
-			a.availiable_ord_id = 1000;
+			a.available_ord_id = 1000;
 		});
+
+		return id;      
+	} else if (it1 != index.end()) {
+		return it1->id;
+	} else if (it2 != index.end()) {
+		check(false, "add_market: wrong trade pair");
 	}
-    else if (it1 != index.end()) {
-        return;
-    }
-    else if(it2 != index.end()) {
-        check(false, "add_market: wrong trade pair");
-    }
+	return 0;
 }
 
 void limit::remove_market(const extended_symbol& token1, const extended_symbol& token2) {
 	markets _markets(get_self(), get_self().value);
 	auto index = _markets.get_index<name("bypair")>();
-    auto hash = to_pair_hash_key(token1, token2);
+	auto hash = to_pair_hash_key(token1, token2);
 	auto it = index.find(hash);
 
 	if (it != index.end()) {
 		_markets.erase(*it);
 	}
+}
+
+uint64_t limit::get_new_ord_id(const uint64_t& market_id) {
+	markets _markets(get_self(), get_self().value);
+	const auto& obj = _markets.get(market_id, "get_new_ord_id: no market object found");
+	uint64_t id = obj.available_ord_id;
+
+	_markets.modify(obj, same_payer, [&](auto& a) {
+		if (a.available_ord_id == std::numeric_limits<uint64_t>::max()) {
+			a.available_ord_id = 1000;
+		} else {
+			a.available_ord_id++;
+		}
+	});
+
+	return id;
 }
 
 std::string limit::to_string(const extended_symbol& token) {

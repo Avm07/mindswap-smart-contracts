@@ -1,3 +1,3 @@
-#include <demo/demo.hpp>
+#include <arbitrage/arbitrage.hpp>
 
-void demo::hello(const name& user, const string& text) { }
+void arbitrage::hello(const name& user, const string& text) { }

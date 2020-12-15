@@ -8,7 +8,7 @@ struct [[eosio::contract("limit"), eosio::table]] market {
 	uint64_t id;
 	extended_symbol token1;
 	extended_symbol token2;
-	uint64_t availiable_ord_id;
+	uint64_t available_ord_id;
 
 	uint64_t primary_key() const {
 		return id;
@@ -24,7 +24,7 @@ struct [[eosio::contract("limit"), eosio::table]] market {
 		return sha256(str.data(), str.size());
 	}
 
-    EOSLIB_SERIALIZE(market, (id)(token1)(token2)(availiable_ord_id))
+    EOSLIB_SERIALIZE(market, (id)(token1)(token2)(available_ord_id))
 };
 using by_pair_hash = indexed_by<name("bypair"), const_mem_fun<market, checksum256, &market::pair_hash_key>>;
 using markets = multi_index<name("markets"), market, by_pair_hash>;
