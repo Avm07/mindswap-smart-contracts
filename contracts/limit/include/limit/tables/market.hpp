@@ -14,13 +14,13 @@ struct [[eosio::contract("limit"), eosio::table]] market {
 		return id;
 	}
 
-	std::string ext_sym_to_string(const extended_symbol &token) const {
+	std::string to_string(const extended_symbol &token) const {
 		std::string str = token.get_symbol().code().to_string() + "@" + token.get_contract().to_string();
 		return str;
 	}
 
 	checksum256 pair_hash_key() const {
-		std::string str = ext_sym_to_string(token1) + "/" + ext_sym_to_string(token2);
+		std::string str = to_string(token1) + "/" + to_string(token2);
 		return sha256(str.data(), str.size());
 	}
 

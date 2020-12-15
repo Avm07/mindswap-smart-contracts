@@ -15,8 +15,13 @@ struct [[eosio::contract("limit"), eosio::table]] deposit {
 		return id;
 	}
 
+	std::string to_string(const asset &token, const name& contract) const {
+		std::string str = token.symbol.code().to_string() + "@" + contract.to_string();
+		return str;
+	}
+
 	checksum256 token_hash_key() const {
-		std::string str = balance.symbol.code().to_string() + "@" + contract.to_string();
+		std::string str = to_string(balance, contract);
 		return sha256(str.data(), str.size());
 	}
 

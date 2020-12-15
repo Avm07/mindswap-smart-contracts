@@ -1,11 +1,10 @@
 #pragma once
 #include <eosio/eosio.hpp>
-#include <eosio/asset.hpp>
 #include <limit/tables/account.hpp>
-#include <limit/tables/stats.hpp>
 #include <limit/tables/deposit.hpp>
 #include <limit/tables/market.hpp>
 #include <limit/tables/order.hpp>
+#include <limit/tables/stats.hpp>
 
 using namespace eosio;
 
@@ -34,8 +33,10 @@ private:
 	void sub_balance_in_orders(const name& owner, const extended_asset& value);
 	void add_balance_in_orders(const name& owner, const extended_asset& value, const name& ram_payer);
 
-	void add_market(const extended_symbol& token1, const extended_symbol& token2);
+	void add_market(const extended_symbol& token1, const extended_symbol& token2, const name& ram_payer);
 	void remove_market(const extended_symbol& token1, const extended_symbol& token2);
 
+	std::string to_string(const extended_symbol& token);
 	checksum256 to_token_hash_key(const extended_symbol& token);
+	checksum256 to_pair_hash_key(const extended_symbol& token1, const extended_symbol& token2);
 };
