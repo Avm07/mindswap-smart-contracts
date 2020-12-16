@@ -25,8 +25,8 @@ public:
 	action_result open(const name& signer, const name& owner, const extended_symbol& token, const name& ram_payer);
 	action_result close(const name& signer, const name& owner, const extended_symbol& token);
 	action_result withdraw(const name& signer, const name& from, const name& to, const extended_asset& quantity, const std::string& memo);
-	action_result crtlmtbuy(const name& signer, const name& owner, const extended_asset& volume, const extended_asset& price);
-	action_result crtlmtsell(const name& signer, const name& owner, const extended_asset& volume, const extended_asset& price);
+	action_result create_limit_buy(const name& signer, const name& owner, const extended_asset& volume, const extended_asset& price);
+	action_result create_limit_sell(const name& signer, const name& owner, const extended_asset& volume, const extended_asset& price);
 
 	name contract;
 

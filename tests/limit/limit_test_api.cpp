@@ -59,12 +59,12 @@ action_result limit_test_api::withdraw(const name& signer, const name& from, con
 	return push_action(signer, contract, N(withdraw), mvo()("from", from)("to", to)("quantity", quantity)("memo", memo));
 }
 
-action_result limit_test_api::crtlmtbuy(const name& signer, const name& owner, const extended_asset& volume, const extended_asset& price)
+action_result limit_test_api::create_limit_buy(const name& signer, const name& owner, const extended_asset& volume, const extended_asset& price)
 {
 	return push_action(signer, contract, N(crtlmtbuy), mvo()("owner", owner)("volume", volume)("price", price));
 }
 
-action_result limit_test_api::crtlmtsell(const name& signer, const name& owner, const extended_asset& volume, const extended_asset& price)
+action_result limit_test_api::create_limit_sell(const name& signer, const name& owner, const extended_asset& volume, const extended_asset& price)
 {
 	return push_action(signer, contract, N(crtlmtsell), mvo()("owner", owner)("volume", volume)("price", price));
 }
