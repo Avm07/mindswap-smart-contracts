@@ -4,7 +4,6 @@ BOOST_AUTO_TEST_SUITE(open_tests)
 
 BOOST_FIXTURE_TEST_CASE(asserts_open_test, limit_tester)
 try {
-	SUCCESS(api.hello(N(cesar), "hola"));
 }
 FC_LOG_AND_RETHROW()
 

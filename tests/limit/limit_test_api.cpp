@@ -20,8 +20,53 @@ limit_test_api::limit_test_api(name acnt, tester* tester) {
 	_tester->set_authority(contract, config::active_name, auth);
 }
 
-action_result limit_test_api::hello(const name& user, const string& text) {
-	return push_action(user, contract, N(hello), mvo()("user", user)("text", text));
+fc::variant limit_test_api::get_deposit(const name& owner, const uint64_t& id)
+{
+    vector<char> data = _tester->get_row_by_account(contract, owner, N(deposits), account_name(id));
+    return data.empty() ? fc::variant() : abi_ser.binary_to_variant("deposit", data, base_tester::abi_serializer_max_time);
+}
+
+fc::variant limit_test_api::get_market(const uint64_t& id)
+{
+    vector<char> data = _tester->get_row_by_account(contract, contract, N(markets), account_name(id));
+    return data.empty() ? fc::variant() : abi_ser.binary_to_variant("market", data, base_tester::abi_serializer_max_time);
+}
+
+fc::variant limit_test_api::get_buy_order(const uint64_t& market_id, const uint64_t& order_id)
+{
+	vector<char> data = _tester->get_row_by_account(contract, name(market_id), N(buyorders), account_name(order_id));
+    return data.empty() ? fc::variant() : abi_ser.binary_to_variant("order", data, base_tester::abi_serializer_max_time);
+}
+	
+fc::variant limit_test_api::get_sell_order(const uint64_t& market_id, const uint64_t& order_id)
+{
+	vector<char> data = _tester->get_row_by_account(contract, name(market_id), N(sellorders), account_name(order_id));
+    return data.empty() ? fc::variant() : abi_ser.binary_to_variant("order", data, base_tester::abi_serializer_max_time);
+}
+
+action_result limit_test_api::open(const name& signer, const name& owner, const extended_symbol& token, const name& ram_payer)
+{
+	return push_action(signer, contract, N(open), mvo()("owner", owner)("token", token)("ram_payer", ram_payer));
+}
+
+action_result limit_test_api::close(const name& signer, const name& owner, const extended_symbol& token)
+{
+	return push_action(signer, contract, N(close), mvo()("owner", owner)("token", token));
+}
+
+action_result limit_test_api::withdraw(const name& signer, const name& from, const name& to, const extended_asset& quantity, const std::string& memo)
+{
+	return push_action(signer, contract, N(withdraw), mvo()("from", from)("to", to)("quantity", quantity)("memo", memo));
+}
+
+action_result limit_test_api::crtlmtbuy(const name& signer, const name& owner, const extended_asset& volume, const extended_asset& price)
+{
+	return push_action(signer, contract, N(crtlmtbuy), mvo()("owner", owner)("volume", volume)("price", price));
+}
+
+action_result limit_test_api::crtlmtsell(const name& signer, const name& owner, const extended_asset& volume, const extended_asset& price)
+{
+	return push_action(signer, contract, N(crtlmtsell), mvo()("owner", owner)("volume", volume)("price", price));
 }
 
 action_result limit_test_api::push_action(const name& signer, const name& cnt, const action_name& name, const variant_object& data) {

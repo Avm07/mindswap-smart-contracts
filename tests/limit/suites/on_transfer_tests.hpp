@@ -4,7 +4,6 @@ BOOST_AUTO_TEST_SUITE(on_transfer_tests)
 
 BOOST_FIXTURE_TEST_CASE(asserts_on_transfer_test, limit_tester)
 try {
-	SUCCESS(api.hello(N(cesar), "hola"));
 }
 FC_LOG_AND_RETHROW()
 
