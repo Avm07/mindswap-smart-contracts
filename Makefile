@@ -25,7 +25,7 @@ test: ## Test using Docker
 	@docker run -t -i -v $(CWD):/dapp kesar/eos-dev:207-170 -c "cd /dapp && /dapp/build/tests/unit_test"
 
 build-local: ## Build local
-	./build.sh -y
+	./build.sh -y -t
 
 test-local: ## Test local
 	./build/tests/unit_test

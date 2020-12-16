@@ -39,13 +39,9 @@ void limit::close_account(const name& owner, const extended_symbol& token) {
 	_deposits.erase(*it);
 }
 
-void limit::deposit(const name& to, const extended_asset& quantity, const std::string& memo) {
-	require_auth(get_self());
-	add_balance(to, quantity, same_payer);
-}
-
 void limit::withdraw(const name& from, const name& to, const extended_asset& quantity, const std::string& memo) {
-	require_auth(get_self());
+	require_auth(from);
+	check(is_withdraw_account_exist(to, quantity.get_extended_symbol()), "withdraw: withdraw account is not exist");
 	sub_balance(from, quantity);
 }
 
@@ -58,7 +54,6 @@ void limit::create_limit_buy(const name& owner, const extended_asset& volume, co
 
 	auto market_id = add_market(volume.get_extended_symbol(), price.get_extended_symbol(), owner);
 	check(market_id != 0, "add_market: cannot add market");
-
 	auto ord_id = get_new_ord_id(market_id);
 
 	buy_orders _buy_orders(get_self(), market_id);
@@ -92,6 +87,14 @@ void limit::create_limit_sell(const name& owner, const extended_asset& volume, c
 		a.price = price.quantity;
 		a.creation_date = current_time_point();
 	});
+}
+
+void limit::on_transfer(const name& from, const name& to, const asset& quantity, const std::string& memo) {
+	if (to == get_self()) {
+		extended_asset value(quantity, get_first_receiver());
+		check(is_deposit_account_exist(from, value.get_extended_symbol()), "on_transfer: deposit account is not exist");
+		add_balance(to, value, same_payer);
+	}
 }
 
 void limit::sub_balance(const name& owner, const extended_asset& value) {
@@ -172,7 +175,7 @@ uint64_t limit::add_market(const extended_symbol& token1, const extended_symbol&
 			a.available_ord_id = 1000;
 		});
 
-		return id;      
+		return id;
 	} else if (it1 != index.end()) {
 		return it1->id;
 	} else if (it2 != index.end()) {
@@ -221,4 +224,18 @@ checksum256 limit::to_token_hash_key(const extended_symbol& token) {
 checksum256 limit::to_pair_hash_key(const extended_symbol& token1, const extended_symbol& token2) {
 	std::string str = to_string(token1) + "/" + to_string(token2);
 	return sha256(str.data(), str.size());
+}
+
+bool limit::is_deposit_account_exist(const name& owner, const extended_symbol& token) {
+	deposits _deposits(get_self(), owner.value);
+	auto index = _deposits.get_index<name("bytoken")>();
+	auto hash = to_token_hash_key(token);
+	auto it = index.find(hash);
+	return it != index.end() ? true : false;
+}
+
+bool limit::is_withdraw_account_exist(const name& owner, const extended_symbol& token) {
+	accounts _accounts(token.get_contract(), owner.value);
+	auto it = _accounts.find(token.get_symbol().code().raw());
+	return it != _accounts.end() ? true : false;
 }
