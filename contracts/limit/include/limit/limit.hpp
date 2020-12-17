@@ -43,4 +43,6 @@ private:
 
 	bool is_deposit_account_exist(const name& owner, const extended_symbol& token);
 	bool is_withdraw_account_exist(const name& owner, const extended_symbol& token);
+
+	void send_transfer(const name &contract, const name &to, const asset &quantity, const std::string &memo);
 };

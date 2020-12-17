@@ -14,16 +14,17 @@ using namespace std;
 using mvo = fc::mutable_variant_object;
 
 #define SUCCESS(call) BOOST_REQUIRE_EQUAL(success(), call)
-#define ERROR(msg, call) BOOST_REQUIRE_EQUAL(wasm_assert_msg(msg), call)
+#define WASM_ASSERT(msg, call) BOOST_REQUIRE_EQUAL(wasm_assert_msg(msg), call)
+#define ERROR(msg, call) BOOST_REQUIRE_EQUAL(error(msg), call)
 
 class limit_tester : public tester {
 protected:
-	limit_test_api api;
+	limit_test_api limit;
 	token_test_api iq;
 
 public:
 	limit_tester();
 
 private:
-	void init_token(const name& to);
+	void init_token();
 };

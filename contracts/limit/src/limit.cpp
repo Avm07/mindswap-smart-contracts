@@ -43,6 +43,7 @@ void limit::withdraw(const name& from, const name& to, const extended_asset& qua
 	require_auth(from);
 	check(is_withdraw_account_exist(to, quantity.get_extended_symbol()), "withdraw: withdraw account is not exist");
 	sub_balance(from, quantity);
+	send_transfer(quantity.contract, to, quantity.quantity, memo);
 }
 
 void limit::create_limit_buy(const name& owner, const extended_asset& volume, const extended_asset& price) {
@@ -93,7 +94,7 @@ void limit::on_transfer(const name& from, const name& to, const asset& quantity,
 	if (to == get_self()) {
 		extended_asset value(quantity, get_first_receiver());
 		check(is_deposit_account_exist(from, value.get_extended_symbol()), "on_transfer: deposit account is not exist");
-		add_balance(to, value, same_payer);
+		add_balance(from, value, same_payer);
 	}
 }
 
@@ -238,4 +239,14 @@ bool limit::is_withdraw_account_exist(const name& owner, const extended_symbol& 
 	accounts _accounts(token.get_contract(), owner.value);
 	auto it = _accounts.find(token.get_symbol().code().raw());
 	return it != _accounts.end() ? true : false;
+}
+
+void limit::send_transfer(const name &contract, const name &to, const asset &quantity, const std::string &memo)
+{
+    action(
+        permission_level{get_self(), name("active")},
+        contract,
+        name("transfer"),
+        std::make_tuple(get_self(), to, quantity, memo))
+        .send();
 }

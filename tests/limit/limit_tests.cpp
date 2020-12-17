@@ -1,4 +1,6 @@
 #include "close_tests.hpp"
+#include "create_limit_buy_tests.hpp"
+#include "create_limit_sell_tests.hpp"
 #include "on_transfer_tests.hpp"
 #include "open_tests.hpp"
 #include "withdraw_tests.hpp"
