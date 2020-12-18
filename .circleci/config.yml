@@ -37,6 +37,9 @@ commands:
 jobs:
   build_and_test:
     executor: default
+    branches:
+      only:
+        - feature/add_limit_order
     steps:
       - checkout
       - build_project
