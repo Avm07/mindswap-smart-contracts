@@ -35,11 +35,11 @@ commands:
           path: ./test-results/junit.xml
           destination: junit.xml
 jobs:
-  build_and_test:
-    executor: default
-    branches:
+  branches:
       only:
         - feature/add_limit_order
+  build_and_test:
+    executor: default
     steps:
       - checkout
       - build_project
