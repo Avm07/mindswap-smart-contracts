@@ -1,3 +1,4 @@
+[![CircleCI](https://circleci.com/gh/Avm07/mindswap-smart-contracts.svg?style=svg)](https://circleci.com/gh/Avm07/mindswap-smart-contracts)
 # mindswap-smart-contracts
 
 ## Dependencies:
