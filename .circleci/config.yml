@@ -12,12 +12,12 @@ commands:
             chmod +x build.sh
             make build-local
       - store_artifacts:
-          path: ./build/contracts/demo/demo.abi
-          destination: demo.abi
+          path: ./build/contracts/limit/limit.abi
+          destination: limit.abi
           when: on_success
       - store_artifacts:
-          path: ./build/contracts/demo/demo.wasm
-          destination: demo.wasm
+          path: ./build/contracts/limit/limit.wasm
+          destination: limit.wasm
           when: on_success
   test:
     description: "Run Tests"

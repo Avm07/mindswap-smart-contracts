@@ -36,6 +36,7 @@ void limit::close_account(const name& owner, const extended_symbol& token) {
 	check(it != index.end(), "Balance row already deleted or never existed. Action won't have any effect.");
 	check(it->balance.amount == 0, "Cannot close because the balance is not zero.");
 	check(it->balance_in_orders.amount == 0, "Cannot close because the balance_in_orders is not zero.");
+	check(!is_open_orders_exist(hash), "close_account: can not close because open orders exist");
 	_deposits.erase(*it);
 }
 
@@ -241,12 +242,47 @@ bool limit::is_withdraw_account_exist(const name& owner, const extended_symbol& 
 	return it != _accounts.end() ? true : false;
 }
 
-void limit::send_transfer(const name &contract, const name &to, const asset &quantity, const std::string &memo)
-{
-    action(
-        permission_level{get_self(), name("active")},
-        contract,
-        name("transfer"),
-        std::make_tuple(get_self(), to, quantity, memo))
-        .send();
+bool limit::is_open_orders_exist(const name& owner, const checksum256& token_hash) {
+	markets _markets(get_self(), get_self().value);
+
+	auto bytoken1_index = _markets.get_index<name("bytoken1")>();
+
+	for (auto itr1 = bytoken1_index.find(token_hash); itr1 != bytoken1_index.end(); itr1++) {
+		if (itr1->token1_hash_key() != token_hash)
+			break;
+
+		if (is_open_buy_orders_exist(owner, itr1->primary_key()))
+			return true;
+	}
+
+	auto bytoken2_index = _markets.get_index<name("bytoken2")>();
+
+	for (auto itr2 = bytoken2_index.find(token_hash); itr2 != bytoken2_index.end(); itr2++) {
+		if (itr2->token2_hash_key() != token_hash)
+			break;
+
+		if (is_open_sell_orders_exist(owner, itr2->primary_key()))
+			return true;
+	}
+
+	return false;
+}
+
+bool limit::is_open_buy_orders_exist(const name& owner, const uint64_t& market_id) {
+	buy_orders _buy_orders(get_self(), market_id);
+	auto index = _buy_orders.get_index<name("byowner")>();
+	auto it = index.find(owner.value);
+	return it != index.end() ? true : false;
+}
+
+bool limit::is_open_sell_orders_exist(const name& owner, const uint64_t& market_id) {
+	sell_orders _sell_orders(get_self(), market_id);
+	auto index = _sell_orders.get_index<name("byowner")>();
+	auto it = index.find(owner.value);
+	return it != index.end() ? true : false;
+}
+
+void limit::send_transfer(const name& contract, const name& to, const asset& quantity, const std::string& memo) {
+	action(permission_level{get_self(), name("active")}, contract, name("transfer"), std::make_tuple(get_self(), to, quantity, memo))
+		.send();
 }
