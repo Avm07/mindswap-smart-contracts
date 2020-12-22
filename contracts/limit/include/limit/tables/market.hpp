@@ -39,4 +39,4 @@ struct [[eosio::contract("limit"), eosio::table]] market {
 using by_token1_hash = indexed_by<name("bytoken1"), const_mem_fun<market, checksum256, &market::token1_hash_key>>;
 using by_token2_hash = indexed_by<name("bytoken2"), const_mem_fun<market, checksum256, &market::token2_hash_key>>;
 using by_pair_hash = indexed_by<name("bypair"), const_mem_fun<market, checksum256, &market::pair_hash_key>>;
-using markets = multi_index<name("markets"), market, by_pair_hash>;
+using markets = multi_index<name("markets"), market, by_token1_hash, by_token2_hash, by_pair_hash>;

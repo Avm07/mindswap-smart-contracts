@@ -36,7 +36,7 @@ void limit::close_account(const name& owner, const extended_symbol& token) {
 	check(it != index.end(), "Balance row already deleted or never existed. Action won't have any effect.");
 	check(it->balance.amount == 0, "Cannot close because the balance is not zero.");
 	check(it->balance_in_orders.amount == 0, "Cannot close because the balance_in_orders is not zero.");
-	check(!is_open_orders_exist(hash), "close_account: can not close because open orders exist");
+	check(!is_open_orders_exist(owner, hash), "close_account: can not close because open orders exist");
 	_deposits.erase(*it);
 }
 
@@ -89,6 +89,44 @@ void limit::create_limit_sell(const name& owner, const extended_asset& volume, c
 		a.price = price.quantity;
 		a.creation_date = current_time_point();
 	});
+}
+
+void limit::close_limit_buy(const uint64_t& market_id, const uint64_t& id)
+{
+	auto [token1, token2] = is_market_exist(market_id);
+	check(token1 != extended_symbol() && token2 != extended_symbol(), "close_limit_buy: market is not exist");
+
+	buy_orders _buy_orders(get_self(), market_id);
+	auto it = _buy_orders.find(id);
+	check(it != _buy_orders.end(), "close_limit_buy: order is not exist");
+
+	require_auth(it->owner);
+
+	extended_asset amount(it->price * it->balance.amount, token2.get_contract());
+
+	sub_balance_in_orders(it->owner, amount);
+	add_balance(it->owner, amount, same_payer);
+
+	_buy_orders.erase(it);
+}
+
+void limit::close_limit_sell(const uint64_t& market_id, const uint64_t& id)
+{
+	auto [token1, token2] = is_market_exist(market_id);
+	check(token1 != extended_symbol() && token2 != extended_symbol(), "close_limit_sell: market is not exist");
+
+	sell_orders _sell_orders(get_self(), market_id);
+	auto it = _sell_orders.find(id);
+	check(it != _sell_orders.end(), "close_limit_sell: order is not exist");
+
+	require_auth(it->owner);
+
+	extended_asset amount(it->balance, token2.get_contract());
+
+	sub_balance_in_orders(it->owner, amount);
+	add_balance(it->owner, amount, same_payer);
+
+	_sell_orders.erase(it);
 }
 
 void limit::on_transfer(const name& from, const name& to, const asset& quantity, const std::string& memo) {
@@ -240,6 +278,13 @@ bool limit::is_withdraw_account_exist(const name& owner, const extended_symbol& 
 	accounts _accounts(token.get_contract(), owner.value);
 	auto it = _accounts.find(token.get_symbol().code().raw());
 	return it != _accounts.end() ? true : false;
+}
+
+trade_pair limit::is_market_exist(const uint64_t& market_id)
+{
+	markets _markets(get_self(), get_self().value);
+	auto it = _markets.find(market_id);
+	return it != _markets.end() ? std::make_pair(it->token1, it->token2) : std::make_pair(extended_symbol(), extended_symbol());
 }
 
 bool limit::is_open_orders_exist(const name& owner, const checksum256& token_hash) {

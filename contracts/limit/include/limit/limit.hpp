@@ -7,6 +7,7 @@
 #include <limit/tables/stats.hpp>
 
 using namespace eosio;
+using trade_pair = std::pair<extended_symbol, extended_symbol>;
 
 class [[eosio::contract("limit")]] limit : public contract {
 public:
@@ -23,6 +24,10 @@ public:
 	[[eosio::action("crtlmtbuy")]] void create_limit_buy(const name& owner, const extended_asset& volume, const extended_asset& price);
 
 	[[eosio::action("crtlmtsell")]] void create_limit_sell(const name& owner, const extended_asset& volume, const extended_asset& price);
+
+	[[eosio::action("clslmtbuy")]] void close_limit_buy(const uint64_t& market_id, const uint64_t& id);
+
+	[[eosio::action("clslmtsell")]] void close_limit_sell(const uint64_t& market_id, const uint64_t& id);
 
 	[[eosio::on_notify("*::transfer")]] void on_transfer(const name& from, const name& to, const asset& quantity, const std::string& memo);
 
@@ -44,7 +49,9 @@ private:
 	bool is_deposit_account_exist(const name& owner, const extended_symbol& token);
 	bool is_withdraw_account_exist(const name& owner, const extended_symbol& token);
 
-	bool is_open_orders_exist(const checksum256& token_hash);
+	trade_pair is_market_exist(const uint64_t& market_id);
+
+	bool is_open_orders_exist(const name& owner, const checksum256& token_hash);
 	bool is_open_buy_orders_exist(const name& owner, const uint64_t& market_id);
 	bool is_open_sell_orders_exist(const name& owner, const uint64_t& market_id);
 
