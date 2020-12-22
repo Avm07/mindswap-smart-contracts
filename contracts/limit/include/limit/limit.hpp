@@ -43,6 +43,8 @@ private:
 
 	uint64_t get_new_ord_id(const uint64_t& market_id);
 
+	extended_asset count_buy_reserve(const extended_asset& volume, const extended_asset& price);
+
 	std::string to_string(const extended_symbol& token);
 	checksum256 to_token_hash_key(const extended_symbol& token);
 	checksum256 to_pair_hash_key(const extended_symbol& token1, const extended_symbol& token2);

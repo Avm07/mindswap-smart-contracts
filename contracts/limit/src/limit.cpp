@@ -50,8 +50,7 @@ void limit::withdraw(const name& from, const name& to, const extended_asset& qua
 void limit::create_limit_buy(const name& owner, const extended_asset& volume, const extended_asset& price) {
 	require_auth(owner);
 
-	asset value(price.quantity * volume.quantity.amount / std::pow(10, volume.quantity.symbol.precision()));
-	extended_asset amount(value, price.contract);
+	auto amount = count_buy_reserve(volume, price);
 	sub_balance(owner, amount);
 	add_balance_in_orders(owner, amount, owner);
 
@@ -103,8 +102,7 @@ void limit::close_limit_buy(const uint64_t& market_id, const uint64_t& id) {
 
 	require_auth(it->owner);
 
-	extended_asset amount(it->price * it->balance.amount, token2.get_contract());
-
+	auto amount = count_buy_reserve({it->balance, token1.get_contract()}, {it->price, token2.get_contract()});
 	sub_balance_in_orders(it->owner, amount);
 	add_balance(it->owner, amount, same_payer);
 
@@ -248,6 +246,12 @@ uint64_t limit::get_new_ord_id(const uint64_t& market_id) {
 	});
 
 	return id;
+}
+
+extended_asset limit::count_buy_reserve(const extended_asset& volume, const extended_asset& price)
+{
+	asset value(price.quantity * volume.quantity.amount / std::pow(10, volume.quantity.symbol.precision()));
+	return extended_asset(value, price.contract);
 }
 
 std::string limit::to_string(const extended_symbol& token) {
