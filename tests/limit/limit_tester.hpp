@@ -27,4 +27,5 @@ public:
 
 private:
 	void init_token();
+	void init_traders_accounts();
 };

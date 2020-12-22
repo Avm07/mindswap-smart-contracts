@@ -50,12 +50,13 @@ void limit::withdraw(const name& from, const name& to, const extended_asset& qua
 void limit::create_limit_buy(const name& owner, const extended_asset& volume, const extended_asset& price) {
 	require_auth(owner);
 
-	extended_asset amount(price.quantity * volume.quantity.amount, price.contract);
+	asset value(price.quantity * volume.quantity.amount / std::pow(10, volume.quantity.symbol.precision()));
+	extended_asset amount(value, price.contract);
 	sub_balance(owner, amount);
 	add_balance_in_orders(owner, amount, owner);
 
-	auto market_id = add_market(volume.get_extended_symbol(), price.get_extended_symbol(), owner);
-	check(market_id != 0, "add_market: cannot add market");
+	auto [status, market_id] = add_market(volume.get_extended_symbol(), price.get_extended_symbol(), owner);
+	check(status != false, "add_market: wrong trade pair");
 	auto ord_id = get_new_ord_id(market_id);
 
 	buy_orders _buy_orders(get_self(), market_id);
@@ -76,7 +77,8 @@ void limit::create_limit_sell(const name& owner, const extended_asset& volume, c
 	sub_balance(owner, volume);
 	add_balance_in_orders(owner, volume, owner);
 
-	auto market_id = add_market(volume.get_extended_symbol(), price.get_extended_symbol(), owner);
+	auto [status, market_id] = add_market(volume.get_extended_symbol(), price.get_extended_symbol(), owner);
+	check(status != false, "add_market: wrong trade pair");
 	auto ord_id = get_new_ord_id(market_id);
 
 	sell_orders _sell_orders(get_self(), market_id);
@@ -91,8 +93,7 @@ void limit::create_limit_sell(const name& owner, const extended_asset& volume, c
 	});
 }
 
-void limit::close_limit_buy(const uint64_t& market_id, const uint64_t& id)
-{
+void limit::close_limit_buy(const uint64_t& market_id, const uint64_t& id) {
 	auto [token1, token2] = is_market_exist(market_id);
 	check(token1 != extended_symbol() && token2 != extended_symbol(), "close_limit_buy: market is not exist");
 
@@ -110,8 +111,7 @@ void limit::close_limit_buy(const uint64_t& market_id, const uint64_t& id)
 	_buy_orders.erase(it);
 }
 
-void limit::close_limit_sell(const uint64_t& market_id, const uint64_t& id)
-{
+void limit::close_limit_sell(const uint64_t& market_id, const uint64_t& id) {
 	auto [token1, token2] = is_market_exist(market_id);
 	check(token1 != extended_symbol() && token2 != extended_symbol(), "close_limit_sell: market is not exist");
 
@@ -195,7 +195,7 @@ void limit::add_balance_in_orders(const name& owner, const extended_asset& value
 	}
 }
 
-uint64_t limit::add_market(const extended_symbol& token1, const extended_symbol& token2, const name& ram_payer) {
+std::pair<bool, uint64_t> limit::add_market(const extended_symbol& token1, const extended_symbol& token2, const name& ram_payer) {
 	markets _markets(get_self(), get_self().value);
 
 	auto index = _markets.get_index<name("bypair")>();
@@ -215,13 +215,12 @@ uint64_t limit::add_market(const extended_symbol& token1, const extended_symbol&
 			a.available_ord_id = 1000;
 		});
 
-		return id;
+		return std::make_pair(true, id);
 	} else if (it1 != index.end()) {
-		return it1->id;
-	} else if (it2 != index.end()) {
-		check(false, "add_market: wrong trade pair");
+		return std::make_pair(true, it1->id);
 	}
-	return 0;
+
+	return std::make_pair(false, 0);
 }
 
 void limit::remove_market(const extended_symbol& token1, const extended_symbol& token2) {
@@ -280,8 +279,7 @@ bool limit::is_withdraw_account_exist(const name& owner, const extended_symbol& 
 	return it != _accounts.end() ? true : false;
 }
 
-trade_pair limit::is_market_exist(const uint64_t& market_id)
-{
+trade_pair limit::is_market_exist(const uint64_t& market_id) {
 	markets _markets(get_self(), get_self().value);
 	auto it = _markets.find(market_id);
 	return it != _markets.end() ? std::make_pair(it->token1, it->token2) : std::make_pair(extended_symbol(), extended_symbol());

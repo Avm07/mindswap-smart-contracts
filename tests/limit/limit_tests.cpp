@@ -1,3 +1,5 @@
+#include "close_limit_buy_tests.hpp"
+#include "close_limit_sell_tests.hpp"
 #include "close_tests.hpp"
 #include "create_limit_buy_tests.hpp"
 #include "create_limit_sell_tests.hpp"

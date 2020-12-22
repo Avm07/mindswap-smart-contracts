@@ -18,13 +18,13 @@ try {
     WASM_ASSERT("Cannot close because the balance is not zero.",
                 limit.close(N(alice), N(alice), iq_token_sym));
 
-    extended_asset eos_token_asset{asset::from_string("1.0000 EOS"), N(eosio.token)};
-    extended_asset iq_token_asset{asset::from_string("1.000 IQ"), N(everipediaiq)};
+    extended_asset sys_token_asset{asset::from_string("1.000 SYS"), N(everipediaiq)};
+    extended_asset iq_token_asset{asset::from_string("100.000 IQ"), N(everipediaiq)};
 
-    // SUCCESS(limit.create_limit_buy(N(alice), N(alice), eos_token_asset, iq_token_asset));
+    SUCCESS(limit.create_limit_buy(N(trader1), N(trader1), sys_token_asset, iq_token_asset));
 
-    // WASM_ASSERT("Cannot close because the balance_in_orders is not zero.",
-    //             limit.close(N(alice), N(alice), iq_token_sym));
+    WASM_ASSERT("Cannot close because the balance_in_orders is not zero.",
+                limit.close(N(trader1), N(trader1), iq_token_sym));
 }
 FC_LOG_AND_RETHROW()
 
