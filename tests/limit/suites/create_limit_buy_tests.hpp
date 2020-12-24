@@ -9,6 +9,15 @@ try {
 
 	ERROR("missing authority of trader1", limit.create_limit_buy(N(trader2), N(trader1), sys_token_asset, iq_token_asset));
 
+    extended_asset negative_sys_token_asset{asset::from_string("-1.000 SYS"), N(everipediaiq)};
+	extended_asset negative_iq_token_asset{asset::from_string("-100.000 IQ"), N(everipediaiq)};
+
+    WASM_ASSERT("create_limit_buy: volume should be positive",
+				limit.create_limit_buy(N(trader1), N(trader1), negative_sys_token_asset, iq_token_asset));
+
+    WASM_ASSERT("create_limit_buy: price should be positive",
+				limit.create_limit_buy(N(trader1), N(trader1), sys_token_asset, negative_iq_token_asset));
+
     extended_asset iq_1000token_asset{asset::from_string("1000.000 IQ"), N(everipediaiq)};
 
 	WASM_ASSERT("overdrawn balance",

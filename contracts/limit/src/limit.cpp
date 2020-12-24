@@ -6,6 +6,7 @@ limit::limit(name receiver, name code, datastream<const char*> ds)
 void limit::open_account(const name& owner, const extended_symbol& token, const name& ram_payer) {
 	require_auth(ram_payer);
 	check(is_account(owner), "owner account does not exist");
+	check(token.get_symbol().is_valid(), "token symbol is not valid");
 
 	auto sym_code_raw = token.get_symbol().code().raw();
 	stats statstable(token.get_contract(), sym_code_raw);
@@ -29,6 +30,7 @@ void limit::open_account(const name& owner, const extended_symbol& token, const 
 
 void limit::close_account(const name& owner, const extended_symbol& token) {
 	require_auth(owner);
+	check(token.get_symbol().is_valid(), "token symbol is not valid");
 	deposits _deposits(get_self(), owner.value);
 	auto index = _deposits.get_index<name("bytoken")>();
 	auto hash = to_token_hash_key(token);
@@ -42,6 +44,8 @@ void limit::close_account(const name& owner, const extended_symbol& token) {
 
 void limit::withdraw(const name& from, const name& to, const extended_asset& quantity, const std::string& memo) {
 	require_auth(from);
+	check(quantity.quantity.symbol.is_valid(), "withdraw: quantity symbol is not valid");
+	check(quantity.quantity.amount > 0, "withdraw: quantity should be positive");
 	check(is_withdraw_account_exist(to, quantity.get_extended_symbol()), "withdraw: withdraw account is not exist");
 	sub_balance(from, quantity);
 	send_transfer(quantity.contract, to, quantity.quantity, memo);
@@ -49,8 +53,12 @@ void limit::withdraw(const name& from, const name& to, const extended_asset& qua
 
 void limit::create_limit_buy(const name& owner, const extended_asset& volume, const extended_asset& price) {
 	require_auth(owner);
+	check(volume.quantity.symbol.is_valid(), "create_limit_buy: volume symbol is not valid");
+	check(price.quantity.symbol.is_valid(), "create_limit_buy: price symbol is not valid");
+	check(volume.quantity.amount > 0, "create_limit_buy: volume should be positive");
+	check(price.quantity.amount > 0, "create_limit_buy: price should be positive");
 
-	auto amount = count_buy_reserve(volume, price);
+	auto amount = count_amount(volume, price);
 	sub_balance(owner, amount);
 	add_balance_in_orders(owner, amount, owner);
 
@@ -68,10 +76,17 @@ void limit::create_limit_buy(const name& owner, const extended_asset& volume, co
 		a.price = price.quantity;
 		a.creation_date = current_time_point();
 	});
+
+	sell_orders _sell_orders(get_self(), market_id);
+	manage_lmt_orders(_buy_orders, _sell_orders);
 }
 
 void limit::create_limit_sell(const name& owner, const extended_asset& volume, const extended_asset& price) {
 	require_auth(owner);
+	check(volume.quantity.symbol.is_valid(), "create_limit_sell: volume symbol is not valid");
+	check(price.quantity.symbol.is_valid(), "create_limit_sell: price symbol is not valid");
+	check(volume.quantity.amount > 0, "create_limit_sell: volume should be positive");
+	check(price.quantity.amount > 0, "create_limit_sell: price should be positive");
 
 	sub_balance(owner, volume);
 	add_balance_in_orders(owner, volume, owner);
@@ -102,7 +117,7 @@ void limit::close_limit_buy(const uint64_t& market_id, const uint64_t& id) {
 
 	require_auth(it->owner);
 
-	auto amount = count_buy_reserve({it->balance, token1.get_contract()}, {it->price, token2.get_contract()});
+	auto amount = count_amount({it->balance, token1.get_contract()}, {it->price, token2.get_contract()});
 	sub_balance_in_orders(it->owner, amount);
 	add_balance(it->owner, amount, same_payer);
 
@@ -232,6 +247,95 @@ void limit::remove_market(const extended_symbol& token1, const extended_symbol& 
 	}
 }
 
+template <typename B, typename S>
+void limit::manage_lmt_orders(B& lmt_buy, S& lmt_sell) {
+	if (!is_limit_deal_exist<B, S>(lmt_buy, lmt_sell)) {
+		return;
+	}
+
+	auto buy_order = lmt_buy.get(find_first_buy<B>(lmt_buy));
+	auto sell_order = lmt_sell.get(find_first_sell<S>(lmt_sell));
+
+	auto market = get_market(lmt_buy.get_scope());
+
+	auto [price, date] = get_deal_price_n_date(buy_order, sell_order);
+	extended_asset deal_price(price, market.token2.get_contract());
+	extended_asset deal_vol(buy_order.balance, market.token1.get_contract());
+	extended_asset amount = count_amount(deal_vol, deal_price);
+
+	if (buy_order.balance == sell_order.balance) {
+		exec_lmt_buy(amount, deal_vol, buy_order.owner);
+		exec_lmt_sell(amount, deal_vol, sell_order.owner);
+
+		lmt_sell.erase(sell_order);
+		lmt_buy.erase(buy_order);
+	} else if (buy_order.balance < sell_order.balance) {
+		exec_lmt_buy(amount, deal_vol, buy_order.owner);
+		exec_lmt_sell(amount, deal_vol, sell_order.owner);
+
+		lmt_sell.modify(sell_order, get_self(), [&](auto& r) { r.balance -= buy_order.balance; });
+
+		lmt_buy.erase(buy_order);
+		manage_lmt_orders<B, S>(lmt_buy, lmt_sell);
+	} else if (buy_order.balance > sell_order.balance) {
+		deal_vol = extended_asset(sell_order.balance, market.token1.get_contract());
+		amount = count_amount(deal_vol, deal_price);
+
+		exec_lmt_buy(amount, deal_vol, buy_order.owner);
+		exec_lmt_sell(amount, deal_vol, sell_order.owner);
+
+		lmt_buy.modify(buy_order, get_self(), [&](auto& r) { r.balance -= sell_order.balance; });
+
+		lmt_sell.erase(sell_order);
+		manage_lmt_orders<B, S>(lmt_buy, lmt_sell);
+	}
+}
+
+template <typename T>
+uint64_t limit::find_first_buy(T& lmt_buy) {
+	auto indexbuy = lmt_buy.template get_index<name("byprice")>();
+	auto itb = indexbuy.rbegin();
+
+	for (auto itr = ++indexbuy.rbegin(); itr != indexbuy.rend(); ++itr) {
+		if (itr->price != itb->price) {
+			break;
+		} else if (itr->price == itb->price && itr->id < itb->id) {
+			itb = itr;
+		}
+	}
+	return itb->id;
+}
+
+template <typename T>
+uint64_t limit::find_first_sell(T& lmt_sell) {
+	auto indexsell = lmt_sell.template get_index<name("byprice")>();
+	auto its = indexsell.begin();
+
+	for (auto itr = ++indexsell.begin(); itr != indexsell.end(); ++itr) {
+		if (itr->price != its->price) {
+			break;
+		} else if (itr->price == its->price && itr->id < its->id) {
+			its = itr;
+		}
+	}
+	return its->id;
+}
+
+void limit::exec_lmt_buy(const extended_asset& amount, const extended_asset& deal_volume, const name& owner) {
+	sub_balance_in_orders(owner, amount);
+	add_balance(owner, deal_volume, owner);
+}
+
+void limit::exec_lmt_sell(const extended_asset& amount, const extended_asset& deal_volume, const name& owner) {
+	sub_balance_in_orders(owner, deal_volume);
+	add_balance(owner, amount, owner);
+}
+
+price_n_date limit::get_deal_price_n_date(const order& buy_order, const order& sell_order) {
+	return (sell_order.id > buy_order.id) ? std::make_pair(buy_order.price, sell_order.creation_date)
+										  : std::make_pair(sell_order.price, buy_order.creation_date);
+}
+
 uint64_t limit::get_new_ord_id(const uint64_t& market_id) {
 	markets _markets(get_self(), get_self().value);
 	const auto& obj = _markets.get(market_id, "get_new_ord_id: no market object found");
@@ -248,8 +352,13 @@ uint64_t limit::get_new_ord_id(const uint64_t& market_id) {
 	return id;
 }
 
-extended_asset limit::count_buy_reserve(const extended_asset& volume, const extended_asset& price)
-{
+market limit::get_market(const uint64_t& market_id) {
+	markets _markets(get_self(), get_self().value);
+	const auto obj = _markets.get(market_id, "get_market: no market object found");
+	return obj;
+}
+
+extended_asset limit::count_amount(const extended_asset& volume, const extended_asset& price) {
 	asset value(price.quantity * volume.quantity.amount / std::pow(10, volume.quantity.symbol.precision()));
 	return extended_asset(value, price.contract);
 }
@@ -287,6 +396,23 @@ trade_pair limit::is_market_exist(const uint64_t& market_id) {
 	markets _markets(get_self(), get_self().value);
 	auto it = _markets.find(market_id);
 	return it != _markets.end() ? std::make_pair(it->token1, it->token2) : std::make_pair(extended_symbol(), extended_symbol());
+}
+
+template <typename B, typename S>
+bool limit::is_limit_deal_exist(B& lmt_buy, S& lmt_sell) {
+	return (is_orders_exist<B>(lmt_buy) && is_orders_exist<S>(lmt_sell) && is_prices_match<B, S>(lmt_buy, lmt_sell)) ? true : false;
+}
+
+template <typename T>
+bool limit::is_orders_exist(T& lmt) {
+	return lmt.begin() != lmt.end() ? true : false;
+}
+
+template <typename B, typename S>
+bool limit::is_prices_match(B& buy, S& sell) {
+	auto indexbuy = buy.template get_index<name("byprice")>();
+	auto indexsell = sell.template get_index<name("byprice")>();
+	return indexbuy.rbegin()->price >= indexsell.begin()->price ? true : false;
 }
 
 bool limit::is_open_orders_exist(const name& owner, const checksum256& token_hash) {

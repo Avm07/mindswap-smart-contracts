@@ -9,6 +9,7 @@
 
 using namespace eosio;
 using trade_pair = std::pair<extended_symbol, extended_symbol>;
+using price_n_date = std::pair<asset, time_point>;
 
 class [[eosio::contract("limit")]] limit : public contract {
 public:
@@ -41,9 +42,22 @@ private:
 	std::pair<bool, uint64_t> add_market(const extended_symbol& token1, const extended_symbol& token2, const name& ram_payer);
 	void remove_market(const extended_symbol& token1, const extended_symbol& token2);
 
-	uint64_t get_new_ord_id(const uint64_t& market_id);
+	template <typename B, typename S>
+	void manage_lmt_orders(B & lmt_buy, S & lmt_sell);
 
-	extended_asset count_buy_reserve(const extended_asset& volume, const extended_asset& price);
+	template <typename T>
+	uint64_t find_first_buy(T & lmt_buy);
+	template <typename T>
+	uint64_t find_first_sell(T & lmt_sell);
+
+	void exec_lmt_buy(const extended_asset& amount, const extended_asset& deal_volume, const name& owner);
+	void exec_lmt_sell(const extended_asset& amount, const extended_asset& deal_volume, const name& owner);
+
+	price_n_date get_deal_price_n_date(const order& buy_order, const order& sell_order);
+	uint64_t get_new_ord_id(const uint64_t& market_id);
+	market get_market(const uint64_t& market_id);
+
+	extended_asset count_amount(const extended_asset& volume, const extended_asset& price);
 
 	std::string to_string(const extended_symbol& token);
 	checksum256 to_token_hash_key(const extended_symbol& token);
@@ -54,9 +68,16 @@ private:
 
 	trade_pair is_market_exist(const uint64_t& market_id);
 
+	template <typename B, typename S>
+	bool is_limit_deal_exist(B& lmt_buy, S& lmt_sell);
+	template <typename T>
+	bool is_orders_exist(T& lmt);
+	template <typename B, typename S>
+	bool is_prices_match(B& buy, S& sell);
+
 	bool is_open_orders_exist(const name& owner, const checksum256& token_hash);
 	bool is_open_buy_orders_exist(const name& owner, const uint64_t& market_id);
 	bool is_open_sell_orders_exist(const name& owner, const uint64_t& market_id);
 
-	void send_transfer(const name &contract, const name &to, const asset &quantity, const std::string &memo);
+	void send_transfer(const name& contract, const name& to, const asset& quantity, const std::string& memo);
 };
