@@ -18,6 +18,15 @@ try {
     WASM_ASSERT("create_limit_buy: price should be positive",
 				limit.create_limit_buy(N(trader1), N(trader1), sys_token_asset, negative_iq_token_asset));
 
+    WASM_ASSERT("SYS@everipediaiq deposit is not opened",
+				limit.create_limit_buy(N(alice), N(alice), sys_token_asset, iq_token_asset));
+
+    extended_symbol sys_token{symbol(SY(3, SYS)), N(everipediaiq)};
+    SUCCESS(limit.open(N(alice), N(alice), sys_token, N(alice)));
+
+    WASM_ASSERT("IQ@everipediaiq deposit is not opened",
+				limit.create_limit_buy(N(alice), N(alice), sys_token_asset, iq_token_asset));
+
     extended_asset iq_1000token_asset{asset::from_string("1000.000 IQ"), N(everipediaiq)};
 
 	WASM_ASSERT("overdrawn balance",

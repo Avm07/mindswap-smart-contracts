@@ -57,6 +57,8 @@ void limit::create_limit_buy(const name& owner, const extended_asset& volume, co
 	check(price.quantity.symbol.is_valid(), "create_limit_buy: price symbol is not valid");
 	check(volume.quantity.amount > 0, "create_limit_buy: volume should be positive");
 	check(price.quantity.amount > 0, "create_limit_buy: price should be positive");
+	check(is_deposit_account_exist(owner, volume.get_extended_symbol()), to_string(volume.get_extended_symbol()) + " deposit is not opened");
+	check(is_deposit_account_exist(owner, price.get_extended_symbol()), to_string(price.get_extended_symbol()) + " deposit is not opened");
 
 	auto amount = count_amount(volume, price);
 	sub_balance(owner, amount);
@@ -87,6 +89,8 @@ void limit::create_limit_sell(const name& owner, const extended_asset& volume, c
 	check(price.quantity.symbol.is_valid(), "create_limit_sell: price symbol is not valid");
 	check(volume.quantity.amount > 0, "create_limit_sell: volume should be positive");
 	check(price.quantity.amount > 0, "create_limit_sell: price should be positive");
+	check(is_deposit_account_exist(owner, volume.get_extended_symbol()), to_string(volume.get_extended_symbol()) + " deposit is not opened");
+	check(is_deposit_account_exist(owner, price.get_extended_symbol()), to_string(price.get_extended_symbol()) + " deposit is not opened");
 
 	sub_balance(owner, volume);
 	add_balance_in_orders(owner, volume, owner);
