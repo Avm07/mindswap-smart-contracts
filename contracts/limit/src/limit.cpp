@@ -105,6 +105,9 @@ void limit::create_limit_sell(const name& owner, const extended_asset& volume, c
 		a.price = price.quantity;
 		a.creation_date = current_time_point();
 	});
+
+	buy_orders _buy_orders(get_self(), market_id);
+	manage_lmt_orders(_buy_orders, _sell_orders);
 }
 
 void limit::close_limit_buy(const uint64_t& market_id, const uint64_t& id) {
@@ -253,10 +256,10 @@ void limit::manage_lmt_orders(B& lmt_buy, S& lmt_sell) {
 		return;
 	}
 
-	auto buy_order = lmt_buy.get(find_first_buy<B>(lmt_buy));
-	auto sell_order = lmt_sell.get(find_first_sell<S>(lmt_sell));
+	auto& buy_order = lmt_buy.get(find_first_buy<B>(lmt_buy));
+	auto& sell_order = lmt_sell.get(find_first_sell<S>(lmt_sell));
 
-	auto market = get_market(lmt_buy.get_scope());
+	const auto market = get_market(lmt_buy.get_scope());
 
 	auto [price, date] = get_deal_price_n_date(buy_order, sell_order);
 	extended_asset deal_price(price, market.token2.get_contract());
