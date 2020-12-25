@@ -1,0 +1,14 @@
+<h1 class="contract">open</h1>
+User-facing action for opening a deposit balance.
+<h1 class="contract">close</h1>
+User-facing action for closing a deposit balance.
+<h1 class="contract">withdraw</h1>
+User-facing action for withdraw founds from deposit balance.
+<h1 class="contract">crtlmtbuy</h1>
+User-facing action for creating limit buy order.
+<h1 class="contract">crtlmtsell</h1>
+User-facing action for creating limit sell order.
+<h1 class="contract">clslmtbuy</h1>
+User-facing action for closing limit buy order.
+<h1 class="contract">clslmtsell</h1>
+User-facing action for closing limit sell order.
