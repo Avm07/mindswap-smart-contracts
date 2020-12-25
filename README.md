@@ -1,3 +1,4 @@
+[![GitHub](https://img.shields.io/github/license/Avm07/mindswap-smart-contracts)](https://raw.githubusercontent.com/Avm07/mindswap-smart-contracts/feature/add_limit_order/LICENSE)
 [![CircleCI](https://circleci.com/gh/Avm07/mindswap-smart-contracts.svg?style=svg)](https://circleci.com/gh/Avm07/mindswap-smart-contracts)
 # mindswap-smart-contracts
 
