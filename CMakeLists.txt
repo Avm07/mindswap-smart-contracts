@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(demo_contracts)
+project(mindswap_contracts)
 
 set(VERSION_MAJOR 1)
 set(VERSION_MINOR 0)
