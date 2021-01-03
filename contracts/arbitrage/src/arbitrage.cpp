@@ -1,3 +1,9 @@
-#include <demo/demo.hpp>
+#include <arbitrage/arbitrage.hpp>
 
-void demo::hello(const name& user, const string& text) { }
+arbitrage::arbitrage(name receiver, name code, datastream<const char*> ds)
+	: contract::contract(receiver, code, ds) { }
+
+void arbitrage::arbitrage_action(const extended_asset& token1, const extended_asset& token2, const name& owner) {
+
+}
+

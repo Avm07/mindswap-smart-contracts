@@ -28,7 +28,7 @@ build-local: ## Build local
 	./build.sh -y -t
 
 test-local: ## Test local
-	./build/tests/unit_test
+	cd ./build/tests && make test
 
 build-test-debug: ## Build & Test with debug using Docker
 	@docker run -t -i -v $(CWD):/dapp kesar/eos-dev:207-170 -c "cd /dapp && /bin/bash /dapp/build.sh -y -t && /dapp/build/tests/unit_test -- --verbose"
