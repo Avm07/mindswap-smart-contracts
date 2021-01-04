@@ -22,5 +22,5 @@ struct [[eosio::contract("arbitrage"), eosio::table]] currency_total {
 		return sha256(str.data(), str.size());
 	}
 };
-using by_token_hash = indexed_by<name("bytoken"), const_mem_fun<currency_total, checksum256, &currency_total::token_hash_key>>;
-using totals = multi_index<name("totals"), currency_total, by_token_hash>;
+using by_supply_token_hash = indexed_by<name("bytoken"), const_mem_fun<currency_total, checksum256, &currency_total::token_hash_key>>;
+using totals = multi_index<name("totals"), currency_total, by_supply_token_hash>;

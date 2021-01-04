@@ -1,11 +1,11 @@
 #pragma once
 #include <cmath>
 #include <eosio/eosio.hpp>
-#include <limit/tables/account.hpp>
+#include <token/tables/account.hpp>
+#include <token/tables/stats.hpp>
 #include <limit/tables/deposit.hpp>
 #include <limit/tables/market.hpp>
 #include <limit/tables/order.hpp>
-#include <limit/tables/stats.hpp>
 
 using namespace eosio;
 using trade_pair = std::pair<extended_symbol, extended_symbol>;

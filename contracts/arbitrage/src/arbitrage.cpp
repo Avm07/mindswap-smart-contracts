@@ -21,9 +21,7 @@ void arbitrage::open_account(const name& owner, const extended_symbol& token, co
 	if (it == index.end()) {
 		_deposits.emplace(ram_payer, [&](auto& a) {
 			a.id = _deposits.available_primary_key();
-			a.contract = token.get_contract();
-			a.balance = asset{0, token.get_symbol()};
-			a.balance_in_orders = asset{0, token.get_symbol()};
+			a.balance = extended_asset{0, token};
 		});
 	}
 }
@@ -36,9 +34,7 @@ void arbitrage::close_account(const name& owner, const extended_symbol& token) {
 	auto hash = to_token_hash_key(token);
 	auto it = index.find(hash);
 	check(it != index.end(), "Balance row already deleted or never existed. Action won't have any effect.");
-	check(it->balance.amount == 0, "Cannot close because the balance is not zero.");
-	check(it->balance_in_orders.amount == 0, "Cannot close because the balance_in_orders is not zero.");
-	check(!is_open_orders_exist(owner, hash), "close_account: can not close because open orders exist");
+	check(it->balance.quantity.amount == 0, "Cannot close because the balance is not zero.");
 	_deposits.erase(*it);
 }
 
@@ -69,9 +65,9 @@ void arbitrage::sub_balance(const name& owner, const extended_asset& value) {
 	auto hash = to_token_hash_key(value.get_extended_symbol());
 
 	const auto& from = index.get(hash, "no balance object found");
-	check(from.balance.amount >= value.quantity.amount, "overdrawn balance");
+	check(from.balance >= value, "overdrawn balance");
 
-	_deposits.modify(from, owner, [&](auto& a) { a.balance -= value.quantity; });
+	_deposits.modify(from, owner, [&](auto& a) { a.balance -= value; });
 }
 
 void arbitrage::add_balance(const name& owner, const extended_asset& value, const name& ram_payer) {
@@ -83,12 +79,10 @@ void arbitrage::add_balance(const name& owner, const extended_asset& value, cons
 	if (it == index.end()) {
 		_deposits.emplace(ram_payer, [&](auto& a) {
 			a.id = _deposits.available_primary_key();
-			a.contract = value.contract;
-			a.balance = value.quantity;
-			a.balance_in_orders = asset{0, value.quantity.symbol};
+			a.balance = value;
 		});
 	} else {
-		_deposits.modify(*it, same_payer, [&](auto& a) { a.balance += value.quantity; });
+		_deposits.modify(*it, same_payer, [&](auto& a) { a.balance += value; });
 	}
 }
 
@@ -114,4 +108,9 @@ bool arbitrage::is_withdraw_account_exist(const name& owner, const extended_symb
 	accounts _accounts(token.get_contract(), owner.value);
 	auto it = _accounts.find(token.get_symbol().code().raw());
 	return it != _accounts.end() ? true : false;
+}
+
+void arbitrage::send_transfer(const name& contract, const name& to, const asset& quantity, const std::string& memo) {
+	action(permission_level{get_self(), name("active")}, contract, name("transfer"), std::make_tuple(get_self(), to, quantity, memo))
+		.send();
 }

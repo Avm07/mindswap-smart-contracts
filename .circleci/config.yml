@@ -19,6 +19,14 @@ commands:
           path: ./build/contracts/limit/limit.wasm
           destination: limit.wasm
           when: on_success
+      - store_artifacts:
+          path: ./build/contracts/arbitrage/arbitrage.abi
+          destination: arbitrage.abi
+          when: on_success
+      - store_artifacts:
+          path: ./build/contracts/arbitrage/arbitrage.wasm
+          destination: arbitrage.wasm
+          when: on_success
   test:
     description: "Run Tests"
     steps:

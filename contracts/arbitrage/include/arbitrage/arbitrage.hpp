@@ -1,6 +1,10 @@
 #pragma once
 #include <eosio/eosio.hpp>
 #include <eosio/asset.hpp>
+#include <token/tables/account.hpp>
+#include <token/tables/stats.hpp>
+#include <arbitrage/tables/deposit.hpp>
+#include <arbitrage/tables/total.hpp>
 
 using namespace eosio;
 
@@ -28,4 +32,6 @@ private:
 
 	bool is_deposit_account_exist(const name& owner, const extended_symbol& token);
 	bool is_withdraw_account_exist(const name& owner, const extended_symbol& token);
+
+	void send_transfer(const name& contract, const name& to, const asset& quantity, const std::string& memo);
 };

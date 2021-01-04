@@ -5,7 +5,7 @@
 
 using namespace eosio;
 
-struct [[eosio::contract("limit"), eosio::table]] deposit {
+struct [[eosio::contract("arbitrage"), eosio::table]] deposit {
 	uint64_t id;
 	extended_asset balance;
 
@@ -22,8 +22,6 @@ struct [[eosio::contract("limit"), eosio::table]] deposit {
 		std::string str = to_string(balance);
 		return sha256(str.data(), str.size());
 	}
-
-	EOSLIB_SERIALIZE(deposit, (id)(balance))
 };
 using by_token_hash = indexed_by<name("bytoken"), const_mem_fun<deposit, checksum256, &deposit::token_hash_key>>;
 using deposits = multi_index<name("deposits"), deposit, by_token_hash>;
