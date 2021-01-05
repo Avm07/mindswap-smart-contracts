@@ -18,10 +18,10 @@ try {
     SUCCESS(iq.transfer(N(alice), arb.contract, asset::from_string("1.000 IQ"), ""));
 
     auto alice_deposit = arb.get_deposit(N(alice), 0);
-
-    REQUIRE_MATCHING_OBJECT(alice_deposit, mvo()
-    ("id", 0)
-    ("balance", "1.000 IQ"));
+    auto balance = alice_deposit["balance"].get_object();
+    
+    BOOST_REQUIRE_EQUAL(alice_deposit["id"], fc::variant(0)); 
+    REQUIRE_MATCHING_OBJECT(balance, mvo()("quantity", "1.000 IQ")("contract", "everipediaiq"));
 }
 FC_LOG_AND_RETHROW()
 

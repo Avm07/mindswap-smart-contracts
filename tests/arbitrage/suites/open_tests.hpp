@@ -27,10 +27,10 @@ try {
     SUCCESS(arb.open(N(alice), N(alice), iq_token, N(alice)));
 
     auto alice_deposit = arb.get_deposit(N(alice), 0);
-
-    REQUIRE_MATCHING_OBJECT(alice_deposit, mvo()
-    ("id", 0)
-    ("balance", "0.000 IQ"));
+    auto balance = alice_deposit["balance"].get_object();
+    
+    BOOST_REQUIRE_EQUAL(alice_deposit["id"], fc::variant(0)); 
+    REQUIRE_MATCHING_OBJECT(balance, mvo()("quantity", "0.000 IQ")("contract", "everipediaiq"));
 }
 FC_LOG_AND_RETHROW()
 

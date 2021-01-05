@@ -22,6 +22,14 @@ fc::variant token_test_api::get_account(const account_name& acc, const string& s
 	return data.empty() ? fc::variant() : abi_ser.binary_to_variant("account", data, base_tester::abi_serializer_max_time);
 }
 
+action_result token_test_api::create(const name& issuer, const asset& maximum_supply) {
+	return push_action(contract, contract, N(create), mvo()("issuer", issuer)("maximum_supply", maximum_supply));
+}
+
+action_result token_test_api::issue(const name& to, const asset& quantity, const std::string& memo) {
+	return push_action(contract, contract, N(issue), mvo()("to", to)("quantity", quantity)("memo", memo));
+}
+
 action_result token_test_api::transfer(const name& from, const name& to, const asset& amount, const string& memo) {
 	return push_action(from, contract, N(transfer), mvo()("from", from)("to", to)("quantity", amount)("memo", memo));
 }

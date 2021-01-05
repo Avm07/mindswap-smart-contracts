@@ -32,10 +32,10 @@ try {
 	SUCCESS(arb.withdraw(N(alice), N(alice), N(alice), iq_token_asset, ""));
 
 	auto alice_deposit = arb.get_deposit(N(alice), 0);
-
-	REQUIRE_MATCHING_OBJECT(alice_deposit,mvo()
-    ("id", 0)
-    ("balance", "0.000 IQ"));
+	auto balance = alice_deposit["balance"].get_object();
+    
+    BOOST_REQUIRE_EQUAL(alice_deposit["id"], fc::variant(0)); 
+    REQUIRE_MATCHING_OBJECT(balance, mvo()("quantity", "0.000 IQ")("contract", "everipediaiq"));
 
 	auto alice_balance = iq.get_account(N(alice), "3,IQ");
 
