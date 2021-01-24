@@ -36,6 +36,8 @@ private:
 	std::string create_request_memo(const symbol_code& sym1, const symbol_code& sym2, const asset& amount);
 	std::pair<extended_asset, std::string> count_swap_request(const name& order_type, const uint64_t& market_id, const uint64_t& id);
 
+	asset get_balance(const name& contract, const name& owner, const symbol_code& token);
+
 	std::string to_string(const extended_symbol& token);
 	checksum256 to_token_hash_key(const extended_symbol& token);
 
@@ -44,7 +46,6 @@ private:
 	bool is_valid_order_type(const name& type);
 	bool is_valid_market_id(const uint64_t& id);
 	bool is_valid_order_id(const name& order_type, const uint64_t& market_id, const uint64_t& id);
-
 
 	void send_fillorder(const name& order_type, const uint64_t& market_id, const uint64_t& id);
 	void send_transfer(const name& contract, const name& to, const asset& quantity, const std::string& memo);

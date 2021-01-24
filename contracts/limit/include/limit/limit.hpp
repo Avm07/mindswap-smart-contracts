@@ -6,6 +6,7 @@
 #include <limit/tables/deposit.hpp>
 #include <limit/tables/market.hpp>
 #include <limit/tables/order.hpp>
+#include <resources/resources.hpp>
 
 using namespace eosio;
 using trade_pair = std::pair<extended_symbol, extended_symbol>;
@@ -30,6 +31,13 @@ public:
 	[[eosio::action("clslmtbuy")]] void close_limit_buy(const uint64_t& market_id, const uint64_t& id);
 
 	[[eosio::action("clslmtsell")]] void close_limit_sell(const uint64_t& market_id, const uint64_t& id);
+
+	//For arbitrage trading
+	[[eosio::action("fillbuyord")]] void fill_buy_order(const uint64_t& market_id, const uint64_t& id);
+
+	[[eosio::action("fillsellord")]] void fill_sell_order(const uint64_t& market_id, const uint64_t& id);
+
+	// [[eosio::action("fullfillpair")]] void full_fill_pair(const uint64_t& market_id, const uint64_t& id);
 
 	[[eosio::on_notify("*::transfer")]] void on_transfer(const name& from, const name& to, const asset& quantity, const std::string& memo);
 

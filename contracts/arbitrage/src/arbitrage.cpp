@@ -53,9 +53,24 @@ void arbitrage::arbitrage_order_trade(const name& owner, const uint64_t& market_
 	check(is_valid_market_id(market_id), "arbitrage_order_trade: invalid market id");
 	check(is_valid_order_id(order_type, market_id, order_id), "arbitrage_order_trade: invalid order id");
 
-	//request amount
-	auto [amount, memo] = count_swap_request();
+	auto arbitrage_balance_before = get_balance();
+
+	//request swap to MIND_SWAP
+	auto [amount, memo] = count_swap_request(order_type, market_id, order_id);
 	send_transfer(amount.contract, MINDSWAP_ACCOUNT, amount.quantity, memo);
+
+	//send fill order to LIMIT
+	auto limit_balance_before = get_balance();
+	send_fillorder();
+	send_transfer(, LIMIT_ACCOUNT, , "");
+
+	//check for trading
+	auto limit_balance_after = get_balance();
+	check(limit_balance_after > limit_balance_before, "limit fill order trade validation failed");
+
+	//final check for correct balances
+	auto arbitrage_balance_after = get_balance();
+	check(arbitrage_balance_after > arbitrage_balance_before, "arbitrage order trade validation failed");
 }
 
 void arbitrage::arbitrage_pair_trade(const name& owner, const uint64_t& market_id) {
@@ -66,9 +81,14 @@ void arbitrage::arbitrage_action(const extended_asset& token1, const extended_as
 
 void arbitrage::on_transfer(const name& from, const name& to, const asset& quantity, const std::string& memo) {
 	if (to == get_self()) {
-		extended_asset value(quantity, get_first_receiver());
-		check(is_deposit_account_exist(from, value.get_extended_symbol()), "on_transfer: deposit account is not exist");
-		add_balance(from, value, same_payer);
+		if (from == MINDSWAP_ACCOUNT || from == LIMIT_ACCOUNT) {
+			return;
+		}
+		else {
+			extended_asset value(quantity, get_first_receiver());
+			check(is_deposit_account_exist(from, value.get_extended_symbol()), "on_transfer: deposit account is not exist");
+			add_balance(from, value, same_payer);
+		}
 	}
 }
 
@@ -111,14 +131,29 @@ std::pair<extended_asset, std::string> count_swap_request(const name& order_type
 		buy_orders _buy_orders(LIMIT_ACCOUNT, market_id);
 		auto itb = _buy_orders.find(id);
 		memo = create_request_memo(itb->balance.symbol().code(), itb->price.symbol().code(), itb->balance);
-		return std::make_pair(extended_asset{itb->balance, }, memo);
+		return std::make_pair(
+			extended_asset{
+				itb->balance,
+			},
+			memo);
 	} else {
 		sell_orders _sell_orders(LIMIT_ACCOUNT, market_id);
 		auto its = _sell_orders.find(id);
 		auto value = count_amount();
 		memo = create_request_memo(its->price.symbol().code(), itb->balance.symbol().code(), value);
-		return std::make_pair(extended_asset{value, }, memo);
+		return std::make_pair(
+			extended_asset{
+				value,
+			},
+			memo);
 	}
+}
+
+asset arbitrage::get_balance(const name& contract, const name& owner, const symbol_code& token)
+{
+	accounts _accounts(contract, owner.value);
+	const auto& obj = _accounts.get(token.raw(), "no balance object found");
+	return obj;
 }
 
 std::string arbitrage::to_string(const extended_symbol& token) {
