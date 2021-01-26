@@ -23,6 +23,8 @@ public:
 	action_result open(const name& signer, const name& owner, const extended_symbol& token, const name& ram_payer);
 	action_result close(const name& signer, const name& owner, const extended_symbol& token);
 	action_result withdraw(const name& signer, const name& from, const name& to, const extended_asset& quantity, const std::string& memo);
+
+	action_result arbitrage_order_trade(const name& signer, const uint64_t& market_id, const name& order_type, const uint64_t& order_id);
 	
 	name contract;
 private:

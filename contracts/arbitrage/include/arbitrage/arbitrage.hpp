@@ -22,8 +22,8 @@ public:
 
 	[[eosio::action("withdraw")]] void withdraw(const name& from, const name& to, const extended_asset& quantity, const std::string& memo);
 
-	[[eosio::action("arbordtrade")]] void arbitrage_order_trade(const name& owner, const uint64_t& market_id,
-																const name& order_type, const uint64_t& order_id);
+	[[eosio::action("arbordtrade")]] void arbitrage_order_trade(const uint64_t& market_id, const name& order_type,
+																const uint64_t& order_id, const symbol_code& mindswap_pool);
 
 	[[eosio::action("arbpairtrade")]] void arbitrage_pair_trade(const name& owner, const uint64_t& market_id);
 
@@ -38,6 +38,7 @@ private:
 
 	asset get_balance(const name& contract, const name& owner, const symbol_code& token);
 
+	std::string to_pool_name(const symbol_code& symb1, const symbol_code& symb2);
 	std::string to_string(const extended_symbol& token);
 	checksum256 to_token_hash_key(const extended_symbol& token);
 
@@ -46,6 +47,8 @@ private:
 	bool is_valid_order_type(const name& type);
 	bool is_valid_market_id(const uint64_t& id);
 	bool is_valid_order_id(const name& order_type, const uint64_t& market_id, const uint64_t& id);
+	bool is_pool_exist(const symbol_code& mindswap_pool);
+	bool is_valid_pool(const symbol_code& mindswap_pool, const symbol_code& symb1, const symbol_code& symb2);
 
 	void send_fillorder(const name& order_type, const uint64_t& market_id, const uint64_t& id);
 	void send_transfer(const name& contract, const name& to, const asset& quantity, const std::string& memo);

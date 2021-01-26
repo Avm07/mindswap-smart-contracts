@@ -26,7 +26,7 @@ public:
 
 		abi_def abi;
 		BOOST_REQUIRE_EQUAL(abi_serializer::to_abi(accnt.abi, abi), true);
-		abi_ser.set_abi(abi, abi_serializer::create_yield_function(fc::microseconds{1000 * 1000}));
+		abi_ser.set_abi(abi, base_tester::abi_serializer_max_time);
 
 		auto auth = authority(1,
 							  {key_weight{_tester->get_public_key(contract, "active"), 1}},
@@ -88,7 +88,7 @@ public:
 	fc::variant get_balance(name smartctr, name user, name table, int64_t id, string struc) {
 		vector<char> data = _tester->get_row_by_account(smartctr, user, table, name(id));
 		return data.empty() ? fc::variant()
-							: abi_ser.binary_to_variant(struc, data, abi_serializer::create_yield_function(fc::microseconds{1000 * 1000}));
+							: abi_ser.binary_to_variant(struc, data, base_tester::abi_serializer_max_time);
 	}
 
 private:
@@ -97,7 +97,7 @@ private:
 		action act;
 		act.account = cnt;
 		act.name = name;
-		act.data = abi_ser.variant_to_binary(action_type_name, data, abi_serializer::create_yield_function(fc::microseconds{1000 * 1000}));
+		act.data = abi_ser.variant_to_binary(action_type_name, data, base_tester::abi_serializer_max_time);
 
 		return _tester->push_action(std::move(act), signer.to_uint64_t());
 	}

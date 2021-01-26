@@ -47,16 +47,15 @@ void arbitrage::withdraw(const name& from, const name& to, const extended_asset&
 	send_transfer(quantity.contract, to, quantity.quantity, memo);
 }
 
-void arbitrage::arbitrage_order_trade(const name& owner, const uint64_t& market_id, const name& order_type, const uint64_t& order_id) {
-	require_auth(owner);
+void arbitrage::arbitrage_order_trade(const uint64_t& market_id, const name& order_type, const uint64_t& order_id, const symbol_code& mindswap_pool) {
 	check(is_valid_order_type(order_type), "arbitrage_order_trade: invalid order type");
 	check(is_valid_market_id(market_id), "arbitrage_order_trade: invalid market id");
 	check(is_valid_order_id(order_type, market_id, order_id), "arbitrage_order_trade: invalid order id");
-
-	auto arbitrage_balance_before = get_balance();
+	check(is_pool_exist(mindswap_pool), "arbitrage_order_trade: mindswap pool is not exist");
 
 	//request swap to MIND_SWAP
 	auto [amount, memo] = count_swap_request(order_type, market_id, order_id);
+	auto arbitrage_balance_before = get_balance();
 	send_transfer(amount.contract, MINDSWAP_ACCOUNT, amount.quantity, memo);
 
 	//send fill order to LIMIT
@@ -124,28 +123,21 @@ std::string arbitrage::create_request_memo(const symbol_code& sym1, const symbol
 	return str;
 }
 
-std::pair<extended_asset, std::string> count_swap_request(const name& order_type, const uint64_t& market_id, const uint64_t& id) {
-	std::pair<extended_asset, std::string> result;
-
+std::pair<extended_asset, std::string> count_swap_request(const symbol_code& mindswap_pool, const name& order_type, const uint64_t& market_id, const uint64_t& id) {
 	if (order_type == BUY_TYPE) {
 		buy_orders _buy_orders(LIMIT_ACCOUNT, market_id);
 		auto itb = _buy_orders.find(id);
-		memo = create_request_memo(itb->balance.symbol().code(), itb->price.symbol().code(), itb->balance);
-		return std::make_pair(
-			extended_asset{
-				itb->balance,
-			},
-			memo);
+		check(is_valid_pool(mindswap_pool, itb->balance.symbol.code(), itb->price.symbol.code()), "count_swap_request: pool is not valid");
+		auto memo = create_request_memo(itb->balance.symbol.code(), itb->price.symbol.code(), itb->balance);
+		return std::make_pair({itb->balance, }, memo);
+			
 	} else {
 		sell_orders _sell_orders(LIMIT_ACCOUNT, market_id);
 		auto its = _sell_orders.find(id);
+		check(is_valid_pool(mindswap_pool, its->price.symbol.code(), its->balance.symbol.code()), "count_swap_request: pool is not valid");
 		auto value = count_amount();
-		memo = create_request_memo(its->price.symbol().code(), itb->balance.symbol().code(), value);
-		return std::make_pair(
-			extended_asset{
-				value,
-			},
-			memo);
+		auto memo = create_request_memo(its->price.symbol.code(), its->balance.symbol.code(), value);
+		return std::make_pair({value, }, memo);
 	}
 }
 
@@ -153,7 +145,13 @@ asset arbitrage::get_balance(const name& contract, const name& owner, const symb
 {
 	accounts _accounts(contract, owner.value);
 	const auto& obj = _accounts.get(token.raw(), "no balance object found");
-	return obj;
+	return obj.balance;
+}
+
+std::string to_pool_name(const symbol_code& symb1, const symbol_code& symb2)
+{
+	auto str = symb1.to_string() + symb2.to_string();
+	return str;
 }
 
 std::string arbitrage::to_string(const extended_symbol& token) {
@@ -199,6 +197,33 @@ bool arbitrage::is_valid_order_id(const name& order_type, const uint64_t& market
 		sell_orders _sell_orders(LIMIT_ACCOUNT, market_id);
 		auto its = _sell_orders.find(id);
 		return its != _sell_orders.end() ? true : false;
+	}
+}
+
+bool arbitrage::is_pool_exist(const symbol_code& mindswap_pool)
+{
+	mindswap_stats _mindswap_stats(MINDSWAP_ACCOUNT, mindswap_pool.raw());
+	auto it = _mindswap_stats.find(mindswap_pool.raw());
+	return it != _mindswap_stats.end() ? true : false;
+}
+
+bool arbitrage::is_valid_pool(const symbol_code& mindswap_pool, const symbol_code& symb1, const symbol_code& symb2)
+{
+	mindswap_stats _mindswap_stats(MINDSWAP_ACCOUNT, mindswap_pool.raw());
+	const auto& obj = _mindswap_stats.get(mindswap_pool.raw());
+	auto pool = obj.supply.symbol.code().to_string();
+
+	if(pool == to_pool_name(symb1, symb2))
+	{
+
+	}
+	else if(pool == to_pool_name(symb2, symb1))
+	{
+
+	}
+	else
+	{
+		return false;
 	}
 }
 

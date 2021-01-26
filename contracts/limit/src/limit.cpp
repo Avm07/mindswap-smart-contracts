@@ -153,7 +153,7 @@ void limit::fill_buy_order(const uint64_t& market_id, const uint64_t& id) {
 	require_auth(ARBITRAGE_ACCOUNT);
 
 	buy_orders _buy_orders(get_self(), market_id);
-	const auto& obj = _buy_orders.get(id, "fill_buy_order: order is not exist")
+	const auto& obj = _buy_orders.get(id, "fill_buy_order: order is not exist");
 
 	auto market_obj = get_market(market_id);
 	auto amount = count_amount({obj.balance, market_obj.token1.get_contract()}, {obj.price, market_obj.token2.get_contract()});

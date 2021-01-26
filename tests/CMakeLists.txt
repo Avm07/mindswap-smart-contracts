@@ -38,6 +38,7 @@ arbitrage/suites
 limit
 limit/suites
 token
+mindswap
 ${CMAKE_BINARY_DIR}
 ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -50,6 +51,7 @@ file(GLOB ARBITRAGE_UNIT_TESTS
 "./arbitrage/suites/*.hpp"
 "./token/*.cpp"
 "./token/*.hpp"
+"./mindswap/*.hpp"
 )
 
 # build unit tests as one executable

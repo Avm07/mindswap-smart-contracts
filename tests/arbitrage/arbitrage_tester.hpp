@@ -2,6 +2,7 @@
 #include "contracts.hpp"
 #include "arbitrage_test_api.hpp"
 #include "token_test_api.hpp"
+#include "mindswapswap_test_api.hpp"
 #include <boost/test/unit_test.hpp>
 #include <eosio/testing/tester.hpp>
 
@@ -21,6 +22,7 @@ class arbitrage_tester : public tester {
 protected:
 	arbitrage_test_api arb;
 	token_test_api iq;
+	mindswapswap_test_api swap;
 
 public:
 	arbitrage_tester();
@@ -28,4 +30,5 @@ public:
 private:
 	void init_token();
 	void init_traders_accounts();
+	void init_mindswap();
 };

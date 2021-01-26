@@ -13,11 +13,11 @@ struct contracts {
 		return read_abi("${CMAKE_SOURCE_DIR}/token/token.abi");
 	}
 
-	static std::vector<uint8_t> mindswap_wasm() {
+	static std::vector<uint8_t> mindswapswap_wasm() {
 		return read_wasm("${CMAKE_SOURCE_DIR}/mindswap/mindswapswap.wasm");
 	}
 
-	static std::vector<char> mindswap_abi() {
+	static std::vector<char> mindswapswap_abi() {
 		return read_abi("${CMAKE_SOURCE_DIR}/mindswap/mindswapswap.abi");
 	}
 

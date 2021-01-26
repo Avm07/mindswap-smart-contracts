@@ -47,6 +47,11 @@ action_result arbitrage_test_api::withdraw(const name& signer, const name& from,
 	return push_action(signer, contract, N(withdraw), mvo()("from", from)("to", to)("quantity", quantity)("memo", memo));
 }
 
+action_result arbitrage_test_api::arbitrage_order_trade(const name& signer, const uint64_t& market_id, const name& order_type, const uint64_t& order_id)
+{
+	return push_action(signer, contract, N(arbordtrade), mvo()("market_id", market_id)("order_type", order_type)("order_id", order_id));
+}
+
 action_result arbitrage_test_api::push_action(const name& signer, const name& cnt, const action_name& name, const variant_object& data) {
 	string action_type_name = abi_ser.get_action_type(name);
 	action act;
