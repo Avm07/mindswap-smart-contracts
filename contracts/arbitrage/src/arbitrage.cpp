@@ -47,7 +47,10 @@ void arbitrage::withdraw(const name& from, const name& to, const extended_asset&
 	send_transfer(quantity.contract, to, quantity.quantity, memo);
 }
 
-void arbitrage::arbitrage_order_trade(const uint64_t& market_id, const name& order_type, const uint64_t& order_id, const symbol_code& mindswap_pool) {
+void arbitrage::arbitrage_order_trade(const uint64_t& market_id,
+									  const name& order_type,
+									  const uint64_t& order_id,
+									  const symbol_code& mindswap_pool) {
 	check(is_valid_order_type(order_type), "arbitrage_order_trade: invalid order type");
 	check(is_valid_market_id(market_id), "arbitrage_order_trade: invalid market id");
 	check(is_valid_order_id(order_type, market_id, order_id), "arbitrage_order_trade: invalid order id");
@@ -72,18 +75,40 @@ void arbitrage::arbitrage_order_trade(const uint64_t& market_id, const name& ord
 	check(arbitrage_balance_after > arbitrage_balance_before, "arbitrage order trade validation failed");
 }
 
-void arbitrage::arbitrage_pair_trade(const name& owner, const uint64_t& market_id) {
-	require_auth(owner);
-}
+void arbitrage::arbitrage_pair_trade(const uint64_t& market_id, const name& orders_type,
+									 const std::vector<uint64_t>& orders_ids, const symbol_code& mindswap_pool) {
+	check(is_valid_order_type(orders_type), "arbitrage_pair_trade: invalid orders type");
+	check(is_valid_market_id(market_id), "arbitrage_pair_trade: invalid market id");
+	check(is_valid_orders_ids(orders_type, market_id, orders_ids), "arbitrage_order_trade: invalid orders ids");
+	check(is_pool_exist(mindswap_pool), "arbitrage_pair_trade: mindswap pool is not exist");
 
-void arbitrage::arbitrage_action(const extended_asset& token1, const extended_asset& token2, const name& owner) { }
+	//request swap to MIND_SWAP
+	auto [amount, memo] = count_swap_request(order_type, market_id, order_id);
+	auto arbitrage_balance_before = get_balance();
+	send_transfer(amount.contract, MINDSWAP_ACCOUNT, amount.quantity, memo);
+
+	//fill orders to LIMIT
+	auto limit_balance_before = get_balance();
+	for(auto i : orders_ids) {
+		send_fillorder();
+	}
+
+	send_transfer(, LIMIT_ACCOUNT, , "");
+
+	//check for trading
+	auto limit_balance_after = get_balance();
+	check(limit_balance_after > limit_balance_before, "limit fill order trade validation failed");
+
+	//final check for correct balances
+	auto arbitrage_balance_after = get_balance();
+	check(arbitrage_balance_after > arbitrage_balance_before, "arbitrage order trade validation failed");
+}
 
 void arbitrage::on_transfer(const name& from, const name& to, const asset& quantity, const std::string& memo) {
 	if (to == get_self()) {
 		if (from == MINDSWAP_ACCOUNT || from == LIMIT_ACCOUNT) {
 			return;
-		}
-		else {
+		} else {
 			extended_asset value(quantity, get_first_receiver());
 			check(is_deposit_account_exist(from, value.get_extended_symbol()), "on_transfer: deposit account is not exist");
 			add_balance(from, value, same_payer);
@@ -118,8 +143,8 @@ void arbitrage::add_balance(const name& owner, const extended_asset& value, cons
 	}
 }
 
-std::string arbitrage::create_request_memo(const symbol_code& sym1, const symbol_code& sym2, const asset& amount) {
-	std::string str = "exchange: " + sym1.to_string() + sym2.to_string() + "," + amount.to_string();
+std::string arbitrage::create_request_memo(const symbol_code& mindswap_pool, const asset& req_amount) {
+	std::string str = "exchange: " + mindswap_pool.to_string() + "," + amount.to_string();
 	return str;
 }
 
@@ -128,28 +153,31 @@ std::pair<extended_asset, std::string> count_swap_request(const symbol_code& min
 		buy_orders _buy_orders(LIMIT_ACCOUNT, market_id);
 		auto itb = _buy_orders.find(id);
 		check(is_valid_pool(mindswap_pool, itb->balance.symbol.code(), itb->price.symbol.code()), "count_swap_request: pool is not valid");
-		auto memo = create_request_memo(itb->balance.symbol.code(), itb->price.symbol.code(), itb->balance);
-		return std::make_pair({itb->balance, }, memo);
-			
+		auto memo = create_request_memo(mindswap_pool, itb->balance);
+		auto value = count_amount();
+		return std::make_pair(value, memo);
 	} else {
 		sell_orders _sell_orders(LIMIT_ACCOUNT, market_id);
 		auto its = _sell_orders.find(id);
 		check(is_valid_pool(mindswap_pool, its->price.symbol.code(), its->balance.symbol.code()), "count_swap_request: pool is not valid");
 		auto value = count_amount();
-		auto memo = create_request_memo(its->price.symbol.code(), its->balance.symbol.code(), value);
-		return std::make_pair({value, }, memo);
+		auto memo = create_request_memo(mindswap_pool, value);
+		return std::make_pair({value,}, memo);
 	}
 }
 
-asset arbitrage::get_balance(const name& contract, const name& owner, const symbol_code& token)
-{
+extended_asset arbitrage::count_amount(const extended_asset& volume, const extended_asset& price) {
+	asset value(price.quantity * volume.quantity.amount / std::pow(10, volume.quantity.symbol.precision()));
+	return extended_asset(value, price.contract);
+}
+
+asset arbitrage::get_balance(const name& contract, const name& owner, const symbol_code& token) {
 	accounts _accounts(contract, owner.value);
 	const auto& obj = _accounts.get(token.raw(), "no balance object found");
 	return obj.balance;
 }
 
-std::string to_pool_name(const symbol_code& symb1, const symbol_code& symb2)
-{
+std::string to_pool_name(const symbol_code& symb1, const symbol_code& symb2) {
 	auto str = symb1.to_string() + symb2.to_string();
 	return str;
 }
@@ -200,29 +228,46 @@ bool arbitrage::is_valid_order_id(const name& order_type, const uint64_t& market
 	}
 }
 
-bool arbitrage::is_pool_exist(const symbol_code& mindswap_pool)
-{
+bool is_valid_orders_ids(const name& order_type, const uint64_t& market_id, const std::vector<uint64_t>& ids) {
+	if (order_type == BUY_TYPE) {
+		buy_orders _buy_orders(LIMIT_ACCOUNT, market_id);
+
+		for (auto id : ids) {
+			auto itb = _buy_orders.find(id);
+			if (itb == _buy_orders.end()) {
+				return false;
+			}
+		}
+		return true;
+	} else {
+		sell_orders _sell_orders(LIMIT_ACCOUNT, market_id);
+
+		for (auto id : ids) {
+			auto itb = _sell_orders.find(id);
+			if (itb == _sell_orders.end()) {
+				return false;
+			}
+		}
+		return true;
+	}
+}
+
+bool arbitrage::is_pool_exist(const symbol_code& mindswap_pool) {
 	mindswap_stats _mindswap_stats(MINDSWAP_ACCOUNT, mindswap_pool.raw());
 	auto it = _mindswap_stats.find(mindswap_pool.raw());
 	return it != _mindswap_stats.end() ? true : false;
 }
 
-bool arbitrage::is_valid_pool(const symbol_code& mindswap_pool, const symbol_code& symb1, const symbol_code& symb2)
-{
+bool arbitrage::is_valid_pool(const symbol_code& mindswap_pool, const symbol_code& symb1, const symbol_code& symb2) {
 	mindswap_stats _mindswap_stats(MINDSWAP_ACCOUNT, mindswap_pool.raw());
 	const auto& obj = _mindswap_stats.get(mindswap_pool.raw());
 	auto pool = obj.supply.symbol.code().to_string();
 
-	if(pool == to_pool_name(symb1, symb2))
-	{
-
-	}
-	else if(pool == to_pool_name(symb2, symb1))
-	{
-
-	}
-	else
-	{
+	if (pool == to_pool_name(symb1, symb2)) {
+		return true;
+	} else if (pool == to_pool_name(symb2, symb1)) {
+		return true;
+	} else {
 		return false;
 	}
 }
