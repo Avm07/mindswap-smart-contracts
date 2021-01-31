@@ -64,5 +64,5 @@ void arbitrage_tester::init_mindswap()
 	extended_asset iq_token_asset{asset::from_string("1000.000 IQ"), N(everipediaiq)};
 	extended_asset sys_token_asset{asset::from_string("1000.000 SYS"), N(everipediaiq)};
 	
-	SUCCESS(swap.inittoken("prediqtteam1", symbol(SY(3, SYSIQ), iq_token_asset, sys_token_asset, 70, "", 1)));
+	SUCCESS(swap.inittoken(N(prediqtteam1), symbol(SY(3, SYSIQ)), iq_token_asset, sys_token_asset, 70, N(), 1));
 }

@@ -9,6 +9,7 @@
 #include <resources/resources.hpp>
 
 using namespace eosio;
+using namespace token;
 using trade_pair = std::pair<extended_symbol, extended_symbol>;
 using price_n_date = std::pair<asset, time_point>;
 

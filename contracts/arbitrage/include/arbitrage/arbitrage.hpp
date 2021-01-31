@@ -1,15 +1,18 @@
 #pragma once
+#include <cmath>
 #include <eosio/eosio.hpp>
 #include <eosio/asset.hpp>
 #include <token/tables/account.hpp>
 #include <token/tables/stats.hpp>
 #include <limit/tables/market.hpp>
 #include <limit/tables/order.hpp>
+#include <mindswap/tables/stat.hpp>
 #include <arbitrage/tables/deposit.hpp>
 #include <arbitrage/tables/total.hpp>
 #include <resources/resources.hpp>
 
 using namespace eosio;
+using namespace token;
 
 class [[eosio::contract("arbitrage")]] arbitrage : public contract {
 public:
@@ -34,11 +37,12 @@ private:
 	void sub_balance(const name& owner, const extended_asset& value);
 	void add_balance(const name& owner, const extended_asset& value, const name& ram_payer);
 
-	std::string create_request_memo(const symbol_code& mindswap_pool, const asset& req_amount);
-	std::pair<extended_asset, std::string> count_swap_request(const name& order_type, const uint64_t& market_id, const uint64_t& id);
+	std::string create_request_memo(const symbol_code& mindswap_pool, const asset& amount_to);
 	extended_asset count_amount(const extended_asset& volume, const extended_asset& price);
-}
-	asset get_balance(const name& contract, const name& owner, const symbol_code& token);
+	std::tuple<extended_asset, extended_asset, std::string> count_swap_amounts(const symbol_code& mindswap_pool, const name& order_type, const uint64_t& market_id, const uint64_t& id);
+
+	asset get_balance(const name& owner, const extended_symbol& token);
+	market get_market(const uint64_t& market_id);
 
 	std::string to_pool_name(const symbol_code& symb1, const symbol_code& symb2);
 	std::string to_string(const extended_symbol& token);
@@ -49,7 +53,7 @@ private:
 	bool is_valid_order_type(const name& type);
 	bool is_valid_market_id(const uint64_t& id);
 	bool is_valid_order_id(const name& order_type, const uint64_t& market_id, const uint64_t& id);
-	bool is_valid_orders_ids(const name& order_type, const uint64_t& market_id, const std::vector<uint64_t>& ids)
+	bool is_valid_orders_ids(const name& order_type, const uint64_t& market_id, const std::vector<uint64_t>& ids);
 	bool is_pool_exist(const symbol_code& mindswap_pool);
 	bool is_valid_pool(const symbol_code& mindswap_pool, const symbol_code& symb1, const symbol_code& symb2);
 

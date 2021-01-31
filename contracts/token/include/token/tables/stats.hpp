@@ -1,9 +1,10 @@
 #pragma once
-#include <eosio/eosio.hpp>
 #include <eosio/asset.hpp>
+#include <eosio/eosio.hpp>
 
 using namespace eosio;
 
+namespace token {
 struct [[eosio::table]] currency_stats {
 	asset supply;
 	asset max_supply;
@@ -13,4 +14,6 @@ struct [[eosio::table]] currency_stats {
 		return supply.symbol.code().raw();
 	}
 };
+
 using stats = multi_index<name("stat"), currency_stats>;
+} // namespace token
