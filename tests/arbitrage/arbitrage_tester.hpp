@@ -3,6 +3,7 @@
 #include "arbitrage_test_api.hpp"
 #include "token_test_api.hpp"
 #include "mindswapswap_test_api.hpp"
+#include "limit_test_api.hpp"
 #include <boost/test/unit_test.hpp>
 #include <eosio/testing/tester.hpp>
 
@@ -23,6 +24,7 @@ protected:
 	arbitrage_test_api arb;
 	token_test_api iq;
 	mindswapswap_test_api swap;
+	limit_test_api limit;
 
 public:
 	arbitrage_tester();
@@ -31,4 +33,5 @@ private:
 	void init_token();
 	void init_traders_accounts();
 	void init_mindswap();
+	void init_limit();
 };

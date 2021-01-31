@@ -84,15 +84,15 @@ void arbitrage::arbitrage_pair_trade(const uint64_t& market_id,
 	check(is_valid_orders_ids(orders_type, market_id, orders_ids), "arbitrage_order_trade: invalid orders ids");
 	check(is_pool_exist(mindswap_pool), "arbitrage_pair_trade: mindswap pool is not exist");
 
-	for (const auto& id : ids) {
+	for (const auto& id : orders_ids) {
 		//request swap to MIND_SWAP
-		auto [amount_from, amount_to, memo] = count_swap_amounts(mindswap_pool, order_type, market_id, order_id);
+		auto [amount_from, amount_to, memo] = count_swap_amounts(mindswap_pool, orders_type, market_id, id);
 		auto arbitrage_balance_before = get_balance(get_self(), amount_from.get_extended_symbol());
 		send_transfer(amount_from.contract, MINDSWAP_ACCOUNT, amount_from.quantity, memo);
 
 		//send fill order to LIMIT
 		auto limit_balance_before = get_balance(LIMIT_ACCOUNT, amount_to.get_extended_symbol());
-		send_fillorder(order_type, market_id, order_id);
+		send_fillorder(orders_type, market_id, id);
 		send_transfer(amount_to.contract, LIMIT_ACCOUNT, amount_to.quantity, "");
 
 		//check for trading

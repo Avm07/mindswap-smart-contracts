@@ -51,6 +51,8 @@ file(GLOB ARBITRAGE_UNIT_TESTS
 "./arbitrage/suites/*.hpp"
 "./token/*.cpp"
 "./token/*.hpp"
+"./limit/limit_test_api.cpp"
+"./limit/limit_test_api.hpp"
 "./mindswap/*.hpp"
 )
 

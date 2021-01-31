@@ -1,9 +1,10 @@
 #include "arbitrage_tester.hpp"
 
 arbitrage_tester::arbitrage_tester()
-	: arb(N(arbitrage), this),
+	: arb(N(mindswaparbi), this),
 	iq(N(everipediaiq), this),
-	swap(N(mindswapswap), this)	
+	swap(N(mindswapswap), this),
+	limit(N(mindswaplimt), this)
 {
 	create_accounts({N(alice), N(bob), N(cesar), N(carol), N(trader1), N(trader2)});
 	produce_blocks(2);
@@ -65,4 +66,13 @@ void arbitrage_tester::init_mindswap()
 	extended_asset sys_token_asset{asset::from_string("1000.000 SYS"), N(everipediaiq)};
 	
 	SUCCESS(swap.inittoken(N(prediqtteam1), symbol(SY(3, SYSIQ)), iq_token_asset, sys_token_asset, 70, N(), 1));
+}
+
+void arbitrage_tester::init_limit()
+{
+	extended_asset sys_token_asset{asset::from_string("1.000 SYS"), N(everipediaiq)};
+	extended_asset iq_token_asset{asset::from_string("100.000 IQ"), N(everipediaiq)};
+
+    SUCCESS(limit.create_limit_sell(N(trader1), N(trader1), sys_token_asset, iq_token_asset));  
+
 }
