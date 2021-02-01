@@ -8,7 +8,6 @@
 #include <limit/tables/order.hpp>
 #include <mindswap/tables/stat.hpp>
 #include <arbitrage/tables/deposit.hpp>
-#include <arbitrage/tables/total.hpp>
 #include <resources/resources.hpp>
 
 using namespace eosio;

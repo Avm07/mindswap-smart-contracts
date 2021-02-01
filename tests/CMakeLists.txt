@@ -53,7 +53,8 @@ file(GLOB ARBITRAGE_UNIT_TESTS
 "./token/*.hpp"
 "./limit/limit_test_api.cpp"
 "./limit/limit_test_api.hpp"
-"./mindswap/*.hpp"
+"./mindswap/mindswap_test_api.hpp"
+"./mindswap/mindswap_test_api.cpp"
 )
 
 # build unit tests as one executable

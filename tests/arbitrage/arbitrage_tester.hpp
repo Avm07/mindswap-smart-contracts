@@ -1,11 +1,10 @@
 #pragma once
-#include "contracts.hpp"
-#include "arbitrage_test_api.hpp"
-#include "token_test_api.hpp"
-#include "mindswapswap_test_api.hpp"
-#include "limit_test_api.hpp"
 #include <boost/test/unit_test.hpp>
 #include <eosio/testing/tester.hpp>
+#include "arbitrage_test_api.hpp"
+#include "token_test_api.hpp"
+#include "mindswap_test_api.hpp"
+#include "limit_test_api.hpp"
 
 using namespace eosio::testing;
 using namespace eosio;
@@ -23,8 +22,8 @@ class arbitrage_tester : public tester {
 protected:
 	arbitrage_test_api arb;
 	token_test_api iq;
-	mindswapswap_test_api swap;
 	limit_test_api limit;
+	mindswap_test_api swap;
 
 public:
 	arbitrage_tester();

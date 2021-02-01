@@ -10,7 +10,7 @@
 
 #include <cmath>
 
-#include "mindswapswap_test_api.hpp"
+#include "mindswap_test_api.hpp"
 
 using namespace eosio::testing;
 using namespace eosio;
@@ -25,7 +25,7 @@ using mvo = fc::mutable_variant_object;
 
 class mindswapswap_tester : public tester {
 protected:
-	mindswapswap_test_api api;
+	mindswap_test_api api;
 
 public:
 	mindswapswap_tester()

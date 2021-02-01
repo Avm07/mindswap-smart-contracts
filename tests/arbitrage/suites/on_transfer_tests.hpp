@@ -6,7 +6,6 @@ BOOST_FIXTURE_TEST_CASE(arbitrage_asserts_on_transfer_test, arbitrage_tester)
 try {
     WASM_ASSERT("on_transfer: deposit account is not exist",
                 iq.transfer(N(alice), arb.contract, asset::from_string("1.000 IQ"), ""));
-
 }
 FC_LOG_AND_RETHROW()
 

@@ -18,7 +18,6 @@ public:
 	arbitrage_test_api(name acnt, tester* tester);
 
 	fc::variant get_deposit(const name& owner, const uint64_t& id);
-	fc::variant get_total(const uint64_t& id);
 
 	action_result open(const name& signer, const name& owner, const extended_symbol& token, const name& ram_payer);
 	action_result close(const name& signer, const name& owner, const extended_symbol& token);
@@ -26,6 +25,7 @@ public:
 
 	action_result arbitrage_order_trade(const name& signer, const uint64_t& market_id, const name& order_type,
 										const uint64_t& order_id, const symbol_code& mindswap_pool);
+										
 	action_result arbitrage_pair_trade(const name& signer, const uint64_t& market_id, const name& orders_type, 
 									   const std::vector<uint64_t>& orders_ids,  const symbol_code& mindswap_pool);
 	

@@ -26,12 +26,6 @@ fc::variant arbitrage_test_api::get_deposit(const name& owner, const uint64_t& i
     return data.empty() ? fc::variant() : abi_ser.binary_to_variant("deposit", data, base_tester::abi_serializer_max_time);
 }
 
-fc::variant arbitrage_test_api::get_total(const uint64_t& id)
-{
-    vector<char> data = _tester->get_row_by_account(contract, contract, N(markets), account_name(id));
-    return data.empty() ? fc::variant() : abi_ser.binary_to_variant("market", data, base_tester::abi_serializer_max_time);
-}
-
 action_result arbitrage_test_api::open(const name& signer, const name& owner, const extended_symbol& token, const name& ram_payer)
 {
 	return push_action(signer, contract, N(open), mvo()("owner", owner)("token", token)("ram_payer", ram_payer));
