@@ -56,6 +56,7 @@ private:
 	bool is_pool_exist(const symbol_code& mindswap_pool);
 	bool is_valid_pool(const symbol_code& mindswap_pool, const symbol_code& symb1, const symbol_code& symb2);
 
-	void send_fillorder(const name& order_type, const uint64_t& market_id, const uint64_t& id);
+	void send_fill_buy_order(const uint64_t& market_id, const uint64_t& id);
+	void send_fill_sell_order(const uint64_t& market_id, const uint64_t& id);
 	void send_transfer(const name& contract, const name& to, const asset& quantity, const std::string& memo);
 };

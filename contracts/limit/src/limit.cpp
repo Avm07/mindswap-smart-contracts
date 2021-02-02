@@ -187,9 +187,14 @@ void limit::fill_sell_order(const uint64_t& market_id, const uint64_t& id) {
 
 void limit::on_transfer(const name& from, const name& to, const asset& quantity, const std::string& memo) {
 	if (to == get_self()) {
-		extended_asset value(quantity, get_first_receiver());
-		check(is_deposit_account_exist(from, value.get_extended_symbol()), "on_transfer: deposit account is not exist");
-		add_balance(from, value, same_payer);
+		if (from == ARBITRAGE_ACCOUNT) {
+			return;
+		}
+		else {
+			extended_asset value(quantity, get_first_receiver());
+			check(is_deposit_account_exist(from, value.get_extended_symbol()), "on_transfer: deposit account is not exist");
+			add_balance(from, value, same_payer);
+		}	
 	}
 }
 

@@ -59,11 +59,18 @@ void arbitrage::arbitrage_order_trade(const uint64_t& market_id,
 	//request swap to MIND_SWAP
 	auto [amount_from, amount_to, memo] = count_swap_amounts(mindswap_pool, order_type, market_id, order_id);
 	auto arbitrage_balance_before = get_balance(get_self(), amount_from.get_extended_symbol());
+	auto limit_balance_before = get_balance(LIMIT_ACCOUNT, amount_to.get_extended_symbol());
+
 	send_transfer(amount_from.contract, MINDSWAP_ACCOUNT, amount_from.quantity, memo);
 
-	//send fill order to LIMIT
-	auto limit_balance_before = get_balance(LIMIT_ACCOUNT, amount_to.get_extended_symbol());
-	send_fillorder(order_type, market_id, order_id);
+	if(order_type == BUY_TYPE)
+	{
+		send_fill_buy_order(market_id, order_id);
+	}
+	else {
+		send_fill_sell_order(market_id, order_id);
+	}
+	
 	send_transfer(amount_to.contract, LIMIT_ACCOUNT, amount_to.quantity, "");
 
 	//check for trading
@@ -92,7 +99,15 @@ void arbitrage::arbitrage_pair_trade(const uint64_t& market_id,
 
 		//send fill order to LIMIT
 		auto limit_balance_before = get_balance(LIMIT_ACCOUNT, amount_to.get_extended_symbol());
-		send_fillorder(orders_type, market_id, id);
+
+		if(orders_type == BUY_TYPE)
+		{
+			send_fill_buy_order(market_id, id);
+		}
+		else {
+			send_fill_sell_order(market_id, id);
+		}
+
 		send_transfer(amount_to.contract, LIMIT_ACCOUNT, amount_to.quantity, "");
 
 		//check for trading
@@ -267,8 +282,13 @@ bool arbitrage::is_valid_pool(const symbol_code& mindswap_pool, const symbol_cod
 	return (pool == to_pool_name(symb1, symb2) || pool == to_pool_name(symb2, symb1)) ? true : false;
 }
 
-void arbitrage::send_fillorder(const name& order_type, const uint64_t& market_id, const uint64_t& id) {
-	action(permission_level{get_self(), name("active")}, LIMIT_ACCOUNT, name("fullfillord"), std::make_tuple(order_type, market_id, id))
+void arbitrage::send_fill_buy_order(const uint64_t& market_id, const uint64_t& id) {
+	action(permission_level{get_self(), name("active")}, LIMIT_ACCOUNT, name("fillbuyord"), std::make_tuple(market_id, id))
+		.send();
+}
+
+void arbitrage::send_fill_sell_order(const uint64_t& market_id, const uint64_t& id) {
+	action(permission_level{get_self(), name("active")}, LIMIT_ACCOUNT, name("fillsellord"), std::make_tuple(market_id, id))
 		.send();
 }
 
