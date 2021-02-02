@@ -68,7 +68,7 @@ void arbitrage::arbitrage_order_trade(const uint64_t& market_id,
 
 	//check for trading
 	auto limit_balance_after = get_balance(LIMIT_ACCOUNT, amount_to.get_extended_symbol());
-	check(limit_balance_after > limit_balance_before, "limit fill order trade validation failed");
+	check(limit_balance_after >= limit_balance_before, "limit fill order trade validation failed");
 
 	//final check for correct balances
 	auto arbitrage_balance_after = get_balance(get_self(), amount_from.get_extended_symbol());
@@ -145,7 +145,8 @@ void arbitrage::add_balance(const name& owner, const extended_asset& value, cons
 }
 
 std::string arbitrage::create_request_memo(const symbol_code& mindswap_pool, const asset& amount_to) {
-	std::string str = "exchange: " + mindswap_pool.to_string() + "," + amount_to.to_string();
+	auto req_amount = asset(0, amount_to.symbol);
+	std::string str = "exchange: " + mindswap_pool.to_string() + "," + req_amount.to_string();
 	return str;
 }
 
@@ -154,8 +155,7 @@ arbitrage::count_swap_amounts(const symbol_code& mindswap_pool, const name& orde
 	if (order_type == BUY_TYPE) {
 		buy_orders _buy_orders(LIMIT_ACCOUNT, market_id);
 		const auto& order = _buy_orders.get(id, "count_swap_amounts: order not found");
-		check(is_valid_pool(mindswap_pool, order.balance.symbol.code(), order.price.symbol.code()),
-			  "count_swap_amounts: pool is not valid");
+		check(is_valid_pool(mindswap_pool, order.balance.symbol.code(), order.price.symbol.code()), "count_swap_amounts: pool is not valid");
 		auto market = get_market(market_id);
 		auto amount_to = extended_asset(order.balance, market.token1.get_contract());
 		auto amount_from = count_amount(amount_to, extended_asset(order.price, market.token2.get_contract()));
@@ -164,12 +164,15 @@ arbitrage::count_swap_amounts(const symbol_code& mindswap_pool, const name& orde
 	} else {
 		sell_orders _sell_orders(LIMIT_ACCOUNT, market_id);
 		const auto& order = _sell_orders.get(id, "count_swap_amounts: order not found");
-		check(is_valid_pool(mindswap_pool, order.price.symbol.code(), order.balance.symbol.code()),
-			  "count_swap_amounts: pool is not valid");
+		check(is_valid_pool(mindswap_pool, order.price.symbol.code(), order.balance.symbol.code()), "count_swap_amounts: pool is not valid");
 		auto market = get_market(market_id);
 		auto amount_from = extended_asset(order.balance, market.token1.get_contract());
 		auto amount_to = count_amount(amount_from, extended_asset(order.price, market.token2.get_contract()));
 		auto memo = create_request_memo(mindswap_pool, amount_to.quantity);
+		//For cave man testing
+		// check(false, "amount_from:" + amount_from.quantity.to_string() + "@" + amount_from.contract.to_string());
+		// check(false, "amount_to:" + amount_to.quantity.to_string() + "@" + amount_to.contract.to_string());
+		// check(false, "memo:" + memo);
 		return std::make_tuple(amount_from, amount_to, memo);
 	}
 }

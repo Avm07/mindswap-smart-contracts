@@ -6,7 +6,7 @@ arbitrage_tester::arbitrage_tester()
 	, limit(N(mindswaplimt), this)
 	, swap(N(mindswapswap), this)
 	{
-	create_accounts({N(prediqtteam1), N(alice), N(bob), N(cesar), N(carol), N(trader1), N(trader2)});
+	create_accounts({N(prediqtteam1), N(prediqtpedia), N(alice), N(bob), N(cesar), N(carol), N(trader1), N(trader2)});
 	produce_blocks(2);
 
 	init_token();
