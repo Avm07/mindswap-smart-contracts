@@ -1,26 +1,20 @@
 #include "limit_tester.hpp"
 
 limit_tester::limit_tester()
-	: limit(N(limit), this)
+	: limit(N(mindswaplimt), this)
 	, iq(N(everipediaiq), this) {
-	create_accounts({N(alice), N(bob), N(cesar), N(carol), N(trader1), N(trader2)});
+	create_accounts({N(mindswaparbi), N(alice), N(bob), N(cesar), N(carol), N(trader1), N(trader2)});
 	produce_blocks(2);
 	init_token();
 	init_traders_accounts();
 }
 
 void limit_tester::init_token() {
-	SUCCESS(iq.push_action(
-		iq.contract, iq.contract, N(create), mvo()("issuer", iq.contract)("maximum_supply", asset::from_string("1000000000.000 IQ"))));
+	SUCCESS(iq.create(iq.contract, asset::from_string("1000000000.000 IQ")));
+	SUCCESS(iq.issue(iq.contract, asset::from_string("1000000000.000 IQ"), ""));
 
-	SUCCESS(iq.push_action(
-		iq.contract, iq.contract, N(issue), mvo()("to", iq.contract)("quantity", asset::from_string("1000000000.000 IQ"))("memo", "")));
-
-	SUCCESS(iq.push_action(
-		iq.contract, iq.contract, N(create), mvo()("issuer", iq.contract)("maximum_supply", asset::from_string("1000000000.000 SYS"))));
-
-	SUCCESS(iq.push_action(
-		iq.contract, iq.contract, N(issue), mvo()("to", iq.contract)("quantity", asset::from_string("1000000000.000 SYS"))("memo", "")));
+	SUCCESS(iq.create(iq.contract, asset::from_string("1000000000.000 SYS")));
+	SUCCESS(iq.issue(iq.contract, asset::from_string("1000000000.000 SYS"), ""));
 
 	SUCCESS(iq.transfer(iq.contract, N(alice), asset::from_string("100.000 IQ"), ""));
 	SUCCESS(iq.transfer(iq.contract, N(bob), asset::from_string("100.000 IQ"), ""));

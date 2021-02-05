@@ -3,3 +3,6 @@
 build/*
 cmake-*
 .vscode/*
+contracts/mindswap/*.cpp
+contracts/mindswap/*.hpp
+
