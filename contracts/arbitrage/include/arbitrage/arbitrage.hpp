@@ -30,6 +30,8 @@ public:
 	[[eosio::action("arbpairtrade")]] void arbitrage_pair_trade(const uint64_t& market_id, const name& orders_type,
 									 							const std::vector<uint64_t>& orders_ids, const symbol_code& mindswap_pool);
 
+	[[eosio::action("validate")]] void validate(const name& type, const name& account, const extended_asset& expected_balance);													
+
 	[[eosio::on_notify("*::transfer")]] void on_transfer(const name& from, const name& to, const asset& quantity, const std::string& memo);
 
 private:
@@ -40,7 +42,7 @@ private:
 	extended_asset count_amount(const extended_asset& volume, const extended_asset& price);
 	std::tuple<extended_asset, extended_asset, std::string> count_swap_amounts(const symbol_code& mindswap_pool, const name& order_type, const uint64_t& market_id, const uint64_t& id);
 
-	asset get_balance(const name& owner, const extended_symbol& token);
+	extended_asset get_balance(const name& owner, const extended_symbol& token);
 	market get_market(const uint64_t& market_id);
 
 	std::string to_pool_name(const symbol_code& symb1, const symbol_code& symb2);
@@ -59,4 +61,5 @@ private:
 	void send_fill_buy_order(const uint64_t& market_id, const uint64_t& id);
 	void send_fill_sell_order(const uint64_t& market_id, const uint64_t& id);
 	void send_transfer(const name& contract, const name& to, const asset& quantity, const std::string& memo);
+	void send_validate(const name& type, const name& contract, const extended_asset& expected_balance);
 };

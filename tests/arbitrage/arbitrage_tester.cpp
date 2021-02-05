@@ -62,10 +62,10 @@ void arbitrage_tester::init_mindswap() {
 	SUCCESS(swap.openext(N(prediqtteam1), N(prediqtteam1), iq_token));
 	SUCCESS(swap.openext(N(prediqtteam1), N(prediqtteam1), sys_token));
 	SUCCESS(iq.transfer(N(prediqtteam1), N(mindswapswap), asset::from_string("1000.000 IQ"), "liquidity"));
-	SUCCESS(iq.transfer(N(prediqtteam1), N(mindswapswap), asset::from_string("1000.000 SYS"), "liquidity"));
+	SUCCESS(iq.transfer(N(prediqtteam1), N(mindswapswap), asset::from_string("100.000 SYS"), "liquidity"));
 
 	extended_asset iq_token_asset{asset::from_string("1000.000 IQ"), iq.contract};
-	extended_asset sys_token_asset{asset::from_string("1000.000 SYS"), iq.contract};
+	extended_asset sys_token_asset{asset::from_string("100.000 SYS"), iq.contract};
 
 	SUCCESS(swap.inittoken(N(prediqtteam1), symbol(SY(3, SYSIQ)), iq_token_asset, sys_token_asset, 70, name(), 1));
 }
@@ -81,8 +81,8 @@ void arbitrage_tester::init_limit() {
 	SUCCESS(iq.transfer(N(trader1), limit.contract, asset::from_string("100.000 IQ"), ""));
 	SUCCESS(iq.transfer(N(trader1), limit.contract, asset::from_string("100.000 SYS"), ""));
 
-	extended_asset sys_token_asset{asset::from_string("1.000 SYS"), iq.contract};
-	extended_asset iq_token_asset{asset::from_string("100.000 IQ"), iq.contract};
+	extended_asset sys_token_asset{asset::from_string("0.010 SYS"), iq.contract};
+	extended_asset iq_token_asset{asset::from_string("0.100 IQ"), iq.contract};
 
 	SUCCESS(limit.create_limit_sell(N(trader1), N(trader1), sys_token_asset, iq_token_asset));
 }

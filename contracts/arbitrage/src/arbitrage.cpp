@@ -56,13 +56,16 @@ void arbitrage::arbitrage_order_trade(const uint64_t& market_id,
 	check(is_valid_order_id(order_type, market_id, order_id), "arbitrage_order_trade: invalid order id");
 	check(is_pool_exist(mindswap_pool), "arbitrage_order_trade: mindswap pool is not exist");
 
-	//request swap to MIND_SWAP
 	auto [amount_from, amount_to, memo] = count_swap_amounts(mindswap_pool, order_type, market_id, order_id);
-	auto arbitrage_balance_before = get_balance(get_self(), amount_from.get_extended_symbol());
+	auto arbitrage_balance_from_before = get_balance(get_self(), amount_from.get_extended_symbol());
+	auto arbitrage_balance_to_before = get_balance(get_self(), amount_to.get_extended_symbol());
 	auto limit_balance_before = get_balance(LIMIT_ACCOUNT, amount_to.get_extended_symbol());
 
+	//Send request to mindswap and validate income amount
 	send_transfer(amount_from.contract, MINDSWAP_ACCOUNT, amount_from.quantity, memo);
+	send_validate(name("swap"), get_self(), arbitrage_balance_to_before + amount_to);
 
+	//Fill order and validate limit balance
 	if(order_type == BUY_TYPE)
 	{
 		send_fill_buy_order(market_id, order_id);
@@ -72,14 +75,10 @@ void arbitrage::arbitrage_order_trade(const uint64_t& market_id,
 	}
 	
 	send_transfer(amount_to.contract, LIMIT_ACCOUNT, amount_to.quantity, "");
+	send_validate(name("trade"), LIMIT_ACCOUNT, limit_balance_before + amount_to);
 
-	//check for trading
-	auto limit_balance_after = get_balance(LIMIT_ACCOUNT, amount_to.get_extended_symbol());
-	check(limit_balance_after >= limit_balance_before, "limit fill order trade validation failed");
-
-	//final check for correct balances
-	auto arbitrage_balance_after = get_balance(get_self(), amount_from.get_extended_symbol());
-	check(arbitrage_balance_after >= arbitrage_balance_before, "arbitrage order trade validation failed");
+	//Final validation of arbitrage started balance
+	send_validate(name("final"), get_self(), arbitrage_balance_from_before);
 }
 
 void arbitrage::arbitrage_pair_trade(const uint64_t& market_id,
@@ -94,12 +93,15 @@ void arbitrage::arbitrage_pair_trade(const uint64_t& market_id,
 	for (const auto& id : orders_ids) {
 		//request swap to MIND_SWAP
 		auto [amount_from, amount_to, memo] = count_swap_amounts(mindswap_pool, orders_type, market_id, id);
-		auto arbitrage_balance_before = get_balance(get_self(), amount_from.get_extended_symbol());
-		send_transfer(amount_from.contract, MINDSWAP_ACCOUNT, amount_from.quantity, memo);
-
-		//send fill order to LIMIT
+		auto arbitrage_balance_from_before = get_balance(get_self(), amount_from.get_extended_symbol());
+		auto arbitrage_balance_to_before = get_balance(get_self(), amount_to.get_extended_symbol());
 		auto limit_balance_before = get_balance(LIMIT_ACCOUNT, amount_to.get_extended_symbol());
 
+		//Send request to mindswap and validate income amount
+		send_transfer(amount_from.contract, MINDSWAP_ACCOUNT, amount_from.quantity, memo);
+		send_validate(name("swap"), get_self(), arbitrage_balance_to_before + amount_to);
+
+		//Fill order and validate limit balance
 		if(orders_type == BUY_TYPE)
 		{
 			send_fill_buy_order(market_id, id);
@@ -107,19 +109,24 @@ void arbitrage::arbitrage_pair_trade(const uint64_t& market_id,
 		else {
 			send_fill_sell_order(market_id, id);
 		}
-
+		
 		send_transfer(amount_to.contract, LIMIT_ACCOUNT, amount_to.quantity, "");
+		send_validate(name("trade"), LIMIT_ACCOUNT, limit_balance_before + amount_to);
 
-		//check for trading
-		auto limit_balance_after = get_balance(LIMIT_ACCOUNT, amount_to.get_extended_symbol());
-		check(limit_balance_after > limit_balance_before, "limit fill order trade validation failed");
-
-		//final check for correct balances
-		auto arbitrage_balance_after = get_balance(get_self(), amount_from.get_extended_symbol());
-		check(arbitrage_balance_after >= arbitrage_balance_before, "arbitrage order trade validation failed");
+		//Final validation of arbitrage started balance
+		send_validate(name("final"), get_self(), arbitrage_balance_from_before);
 	}
 }
 
+void arbitrage::validate(const name& type, const name& account, const extended_asset& expected_balance) {
+	require_auth(get_self());
+	check(is_account(account), "validate: account is not exist");
+	check(expected_balance.quantity.is_valid(), "validate: expected_balance is not valid");
+	check(expected_balance.quantity.amount > 0, "validate: expected_balance should be positive");
+	auto current_balance = get_balance(account, expected_balance.get_extended_symbol());
+	check(current_balance >= expected_balance, "validate: " + type.to_string() + " validation failed for " + account.to_string() + " " + current_balance.quantity.to_string() + "!>=" + expected_balance.quantity.to_string());
+}
+									
 void arbitrage::on_transfer(const name& from, const name& to, const asset& quantity, const std::string& memo) {
 	if (to == get_self()) {
 		if (from == MINDSWAP_ACCOUNT || from == LIMIT_ACCOUNT) {
@@ -197,10 +204,10 @@ extended_asset arbitrage::count_amount(const extended_asset& volume, const exten
 	return extended_asset(value, price.contract);
 }
 
-asset arbitrage::get_balance(const name& owner, const extended_symbol& token) {
+extended_asset arbitrage::get_balance(const name& owner, const extended_symbol& token) {
 	accounts _accounts(token.get_contract(), owner.value);
 	const auto& obj = _accounts.get(token.get_symbol().code().raw(), "no balance object found");
-	return obj.balance;
+	return extended_asset(obj.balance.amount, token);
 }
 
 market arbitrage::get_market(const uint64_t& market_id) {
@@ -294,5 +301,10 @@ void arbitrage::send_fill_sell_order(const uint64_t& market_id, const uint64_t& 
 
 void arbitrage::send_transfer(const name& contract, const name& to, const asset& quantity, const std::string& memo) {
 	action(permission_level{get_self(), name("active")}, contract, name("transfer"), std::make_tuple(get_self(), to, quantity, memo))
+		.send();
+}
+
+void arbitrage::send_validate(const name& type, const name& account, const extended_asset& expected_balance) {
+	action(permission_level{get_self(), name("active")}, get_self(), name("validate"), std::make_tuple(type, account, expected_balance))
 		.send();
 }

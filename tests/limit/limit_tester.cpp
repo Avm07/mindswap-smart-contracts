@@ -3,7 +3,7 @@
 limit_tester::limit_tester()
 	: limit(N(mindswaplimt), this)
 	, iq(N(everipediaiq), this) {
-	create_accounts({N(alice), N(bob), N(cesar), N(carol), N(trader1), N(trader2)});
+	create_accounts({N(mindswaparbi), N(alice), N(bob), N(cesar), N(carol), N(trader1), N(trader2)});
 	produce_blocks(2);
 	init_token();
 	init_traders_accounts();
