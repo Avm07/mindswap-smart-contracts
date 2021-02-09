@@ -149,6 +149,48 @@ void limit::close_limit_sell(const uint64_t& market_id, const uint64_t& id) {
 	_sell_orders.erase(it);
 }
 
+void limit::part_fill_buy_order(const uint64_t& market_id, const uint64_t& id, const asset& amount) {
+	require_auth(ARBITRAGE_ACCOUNT);
+
+	buy_orders _buy_orders(get_self(), market_id);
+	const auto& obj = _buy_orders.get(id, "part_fill_buy_order: order is not exist");
+	auto market_obj = get_market(market_id);
+
+	auto deal_vol = extended_asset(amount, market_obj.token1.get_contract());
+	auto deal_price = extended_asset(obj.price, market_obj.token2.get_contract());
+	auto deal_amount = count_amount(deal_vol, deal_price);
+
+	add_balance(obj.owner, deal_vol, same_payer);
+	sub_balance_in_orders(obj.owner, deal_amount);
+
+	send_transfer(deal_amount.contract, ARBITRAGE_ACCOUNT, deal_amount.quantity, "");
+
+	//TODO modify order balance or erase if full fill
+	if()
+	_buy_orders.erase(obj);
+}
+
+void limit::part_fill_sell_order(const uint64_t& market_id, const uint64_t& id, const asset& amount) {
+	require_auth(ARBITRAGE_ACCOUNT);
+
+	sell_orders _sell_orders(get_self(), market_id);
+	const auto& obj = _sell_orders.get(id, "part_fill_sell_order: order is not exist");
+	auto market_obj = get_market(market_id);
+
+	auto deal_vol = extended_asset(amount, market_obj.token1.get_contract());
+	auto deal_price = extended_asset(obj.price, market_obj.token2.get_contract());
+	auto deal_amount = count_amount(deal_vol, deal_price);
+
+	add_balance(obj.owner, deal_amount, same_payer);
+	sub_balance_in_orders(obj.owner, deal_vol);
+
+	send_transfer(deal_vol.contract, ARBITRAGE_ACCOUNT, deal_vol.quantity, "");
+
+	//TODO modify order balance or erase if full fill
+	if()
+	_sell_orders.erase(obj);
+}
+
 void limit::fill_buy_order(const uint64_t& market_id, const uint64_t& id) {
 	require_auth(ARBITRAGE_ACCOUNT);
 
