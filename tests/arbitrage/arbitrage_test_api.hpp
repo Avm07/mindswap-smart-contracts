@@ -24,7 +24,7 @@ public:
 	action_result withdraw(const name& signer, const name& from, const name& to, const extended_asset& quantity, const std::string& memo);
 
 	action_result arbitrage_order_trade(const name& signer, const uint64_t& market_id, const name& order_type,
-										const uint64_t& order_id, const symbol_code& mindswap_pool);
+										const uint64_t& order_id, const asset& amount, const symbol_code& mindswap_pool);
 										
 	action_result arbitrage_pair_trade(const name& signer, const uint64_t& market_id, const name& orders_type, 
 									   const std::vector<uint64_t>& orders_ids,  const symbol_code& mindswap_pool);

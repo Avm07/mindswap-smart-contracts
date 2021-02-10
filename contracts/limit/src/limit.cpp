@@ -57,7 +57,8 @@ void limit::create_limit_buy(const name& owner, const extended_asset& volume, co
 	check(price.quantity.symbol.is_valid(), "create_limit_buy: price symbol is not valid");
 	check(volume.quantity.amount > 0, "create_limit_buy: volume should be positive");
 	check(price.quantity.amount > 0, "create_limit_buy: price should be positive");
-	check(is_deposit_account_exist(owner, volume.get_extended_symbol()), to_string(volume.get_extended_symbol()) + " deposit is not opened");
+	check(is_deposit_account_exist(owner, volume.get_extended_symbol()),
+		  to_string(volume.get_extended_symbol()) + " deposit is not opened");
 	check(is_deposit_account_exist(owner, price.get_extended_symbol()), to_string(price.get_extended_symbol()) + " deposit is not opened");
 
 	auto amount = count_amount(volume, price);
@@ -89,7 +90,8 @@ void limit::create_limit_sell(const name& owner, const extended_asset& volume, c
 	check(price.quantity.symbol.is_valid(), "create_limit_sell: price symbol is not valid");
 	check(volume.quantity.amount > 0, "create_limit_sell: volume should be positive");
 	check(price.quantity.amount > 0, "create_limit_sell: price should be positive");
-	check(is_deposit_account_exist(owner, volume.get_extended_symbol()), to_string(volume.get_extended_symbol()) + " deposit is not opened");
+	check(is_deposit_account_exist(owner, volume.get_extended_symbol()),
+		  to_string(volume.get_extended_symbol()) + " deposit is not opened");
 	check(is_deposit_account_exist(owner, price.get_extended_symbol()), to_string(price.get_extended_symbol()) + " deposit is not opened");
 
 	sub_balance(owner, volume);
@@ -165,9 +167,11 @@ void limit::part_fill_buy_order(const uint64_t& market_id, const uint64_t& id, c
 
 	send_transfer(deal_amount.contract, ARBITRAGE_ACCOUNT, deal_amount.quantity, "");
 
-	//TODO modify order balance or erase if full fill
-	if()
-	_buy_orders.erase(obj);
+	if (obj.balance == amount) {
+		_buy_orders.erase(obj);
+	} else {
+		_buy_orders.modify(obj, same_payer, [&](auto& a) { a.balance -= amount; });
+	}
 }
 
 void limit::part_fill_sell_order(const uint64_t& market_id, const uint64_t& id, const asset& amount) {
@@ -186,9 +190,11 @@ void limit::part_fill_sell_order(const uint64_t& market_id, const uint64_t& id, 
 
 	send_transfer(deal_vol.contract, ARBITRAGE_ACCOUNT, deal_vol.quantity, "");
 
-	//TODO modify order balance or erase if full fill
-	if()
-	_sell_orders.erase(obj);
+	if (obj.balance == amount) {
+		_sell_orders.erase(obj);
+	} else {
+		_sell_orders.modify(obj, same_payer, [&](auto& a) { a.balance -= amount; });
+	}
 }
 
 void limit::fill_buy_order(const uint64_t& market_id, const uint64_t& id) {
@@ -231,12 +237,11 @@ void limit::on_transfer(const name& from, const name& to, const asset& quantity,
 	if (to == get_self()) {
 		if (from == ARBITRAGE_ACCOUNT) {
 			return;
-		}
-		else {
+		} else {
 			extended_asset value(quantity, get_first_receiver());
 			check(is_deposit_account_exist(from, value.get_extended_symbol()), "on_transfer: deposit account is not exist");
 			add_balance(from, value, same_payer);
-		}	
+		}
 	}
 }
 

@@ -198,7 +198,7 @@ arbitrage::count_swap_amounts(const symbol_code& mindswap_pool, const name& orde
 }
 
 std::tuple<extended_asset, extended_asset, std::string>
-count_swap_amounts(const symbol_code& mindswap_pool, const name& order_type, const uint64_t& market_id, const uint64_t& id, const asset& amount) {
+arbitrage::count_swap_amounts(const symbol_code& mindswap_pool, const name& order_type, const uint64_t& market_id, const uint64_t& id, const asset& amount) {
 	if (order_type == BUY_TYPE) {
 		buy_orders _buy_orders(LIMIT_ACCOUNT, market_id);
 		const auto& order = _buy_orders.get(id, "count_swap_amounts: order not found");
@@ -213,7 +213,7 @@ count_swap_amounts(const symbol_code& mindswap_pool, const name& order_type, con
 		const auto& order = _sell_orders.get(id, "count_swap_amounts: order not found");
 		check(is_valid_pool(mindswap_pool, order.price.symbol.code(), order.balance.symbol.code()), "count_swap_amounts: pool is not valid");
 		auto market = get_market(market_id);
-		auto amount_from = extended_asset(order.balance, market.token1.get_contract());
+		auto amount_from = extended_asset(amount, market.token1.get_contract());
 		auto amount_to = count_amount(amount_from, extended_asset(order.price, market.token2.get_contract()));
 		auto memo = create_request_memo(mindswap_pool, amount_to.quantity);
 		return std::make_tuple(amount_from, amount_to, memo);
@@ -292,11 +292,11 @@ bool arbitrage::is_valid_amount(const name& order_type, const uint64_t& market_i
 	if (order_type == BUY_TYPE) {
 		buy_orders _buy_orders(LIMIT_ACCOUNT, market_id);
 		const auto& ord = _buy_orders.get(id, "is_valid_amount: order not found");
-		return (amount.is_valid() && ord.balance.symbol == amount.symbol && ord.balance >= amount) ? true : false;
+		return (amount.is_valid() && amount.amount > 0 && ord.balance.symbol == amount.symbol && ord.balance >= amount) ? true : false;
 	} else {
 		sell_orders _sell_orders(LIMIT_ACCOUNT, market_id);
 		const auto& ord = _sell_orders.get(id, "is_valid_amount: order not found");
-		return (amount.is_valid() && ord.balance.symbol == amount.symbol && ord.balance >= amount) ? true : false;
+		return (amount.is_valid() && amount.amount > 0 && ord.balance.symbol == amount.symbol && ord.balance >= amount) ? true : false;
 	}
 }
 

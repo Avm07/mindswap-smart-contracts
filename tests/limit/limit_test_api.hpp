@@ -29,9 +29,11 @@ public:
 	action_result create_limit_sell(const name& signer, const name& owner, const extended_asset& volume, const extended_asset& price);
 	action_result close_limit_buy(const name& signer, const uint64_t& market_id, const uint64_t& id);
 	action_result close_limit_sell(const name& signer, const uint64_t& market_id, const uint64_t& id);
+	action_result part_fill_buy_order(const name& signer, const uint64_t& market_id, const uint64_t& id, const asset& amount);
+	action_result part_fill_sell_order(const name& signer, const uint64_t& market_id, const uint64_t& id, const asset& amount);
 	action_result fill_buy_order(const name& signer, const uint64_t& market_id, const uint64_t& id);
 	action_result fill_sell_order(const name& signer, const uint64_t& market_id, const uint64_t& id);
-
+	
 	name contract;
 private:
 	action_result push_action(const name& signer, const name& cnt, const action_name& name, const variant_object& data);
