@@ -143,7 +143,7 @@ void limit::close_limit_sell(const uint64_t& market_id, const uint64_t& id) {
 
 	require_auth(it->owner);
 
-	extended_asset amount(it->balance, token2.get_contract());
+	extended_asset amount(it->balance, token1.get_contract());
 
 	sub_balance_in_orders(it->owner, amount);
 	add_balance(it->owner, amount, same_payer);
