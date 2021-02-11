@@ -47,11 +47,9 @@ void arbitrage::withdraw(const name& from, const name& to, const extended_asset&
 	send_transfer(quantity.contract, to, quantity.quantity, memo);
 }
 
-void arbitrage::arbitrage_order_trade(const uint64_t& market_id,
-									  const name& order_type,
-									  const uint64_t& order_id,
-									  const asset& amount,
-									  const symbol_code& mindswap_pool) {
+void arbitrage::arbitrage_order_trade(const name& account, const uint64_t& market_id, const name& order_type,
+									  const uint64_t& order_id, const asset& amount, const symbol_code& mindswap_pool) {
+	require_auth(account);
 	check(is_valid_order_type(order_type), "arbitrage_order_trade: invalid order type");
 	check(is_valid_market_id(market_id), "arbitrage_order_trade: invalid market id");
 	check(is_valid_order_id(order_type, market_id, order_id), "arbitrage_order_trade: invalid order id");
@@ -83,10 +81,9 @@ void arbitrage::arbitrage_order_trade(const uint64_t& market_id,
 	send_validate(name("final"), get_self(), arbitrage_balance_from_before);
 }
 
-void arbitrage::arbitrage_pair_trade(const uint64_t& market_id,
-									 const name& orders_type,
-									 const std::vector<uint64_t>& orders_ids,
-									 const symbol_code& mindswap_pool) {
+void arbitrage::arbitrage_pair_trade(const name& account, const uint64_t& market_id, const name& orders_type,
+									 const std::vector<uint64_t>& orders_ids, const symbol_code& mindswap_pool) {
+	require_auth(account);
 	check(is_valid_order_type(orders_type), "arbitrage_pair_trade: invalid orders type");
 	check(is_valid_market_id(market_id), "arbitrage_pair_trade: invalid market id");
 	check(is_valid_orders_ids(orders_type, market_id, orders_ids), "arbitrage_order_trade: invalid orders ids");
@@ -120,13 +117,20 @@ void arbitrage::arbitrage_pair_trade(const uint64_t& market_id,
 	}
 }
 
-void arbitrage::validate(const name& type, const name& account, const extended_asset& expected_balance) {
+void arbitrage::validate(const name& type, const name& account, const extended_asset& expected_balance, const name& recipient) {
 	require_auth(get_self());
 	check(is_account(account), "validate: account is not exist");
 	check(expected_balance.quantity.is_valid(), "validate: expected_balance is not valid");
 	check(expected_balance.quantity.amount > 0, "validate: expected_balance should be positive");
 	auto current_balance = get_balance(account, expected_balance.get_extended_symbol());
 	check(current_balance >= expected_balance, "validate: " + type.to_string() + " validation failed for " + account.to_string() + " " + current_balance.quantity.to_string() + "!>=" + expected_balance.quantity.to_string());
+
+	if(type == name("swap") && current_balance.quantity > expected_balance.quantity) {
+		check(is_account(recipient), "validate: recipient account is not exist");
+		// check();
+		auto reward = current_balance - expected_balance;
+		send_transfer(reward.contract, recipient, reward.quantity, "");
+	}
 }
 									
 void arbitrage::on_transfer(const name& from, const name& to, const asset& quantity, const std::string& memo) {

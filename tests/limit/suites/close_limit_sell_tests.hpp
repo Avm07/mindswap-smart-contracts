@@ -27,8 +27,8 @@ try {
 
     SUCCESS(limit.close_limit_sell(N(trader1), 0, 1000)); 
 
-    auto buy_order = limit.get_sell_order(0, 1000);
-    BOOST_REQUIRE_EQUAL(true, buy_order.is_null());
+    sell_order = limit.get_sell_order(0, 1000);
+    BOOST_REQUIRE_EQUAL(true, sell_order.is_null());
 
     auto deposit = limit.get_deposit(N(trader1), 1);
 

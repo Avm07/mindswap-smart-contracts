@@ -24,13 +24,13 @@ public:
 
 	[[eosio::action("withdraw")]] void withdraw(const name& from, const name& to, const extended_asset& quantity, const std::string& memo);
 
-	[[eosio::action("arbordtrade")]] void arbitrage_order_trade(const uint64_t& market_id, const name& order_type, const uint64_t& order_id,
+	[[eosio::action("arbordtrade")]] void arbitrage_order_trade(const name& account, const uint64_t& market_id, const name& order_type, const uint64_t& order_id,
 																const asset& amount, const symbol_code& mindswap_pool);
 
-	[[eosio::action("arbpairtrade")]] void arbitrage_pair_trade(const uint64_t& market_id, const name& orders_type,
+	[[eosio::action("arbpairtrade")]] void arbitrage_pair_trade(const name& account, const uint64_t& market_id, const name& orders_type,
 																const std::vector<uint64_t>& orders_ids, const symbol_code& mindswap_pool);
 
-	[[eosio::action("validate")]] void validate(const name& type, const name& account, const extended_asset& expected_balance);
+	[[eosio::action("validate")]] void validate(const name& type, const name& account, const extended_asset& expected_balance, const name& recipient);
 
 	[[eosio::on_notify("*::transfer")]] void on_transfer(const name& from, const name& to, const asset& quantity, const std::string& memo);
 
