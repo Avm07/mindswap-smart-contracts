@@ -67,5 +67,5 @@ private:
 	void send_fill_buy_order(const uint64_t& market_id, const uint64_t& id);
 	void send_fill_sell_order(const uint64_t& market_id, const uint64_t& id);
 	void send_transfer(const name& contract, const name& to, const asset& quantity, const std::string& memo);
-	void send_validate(const name& type, const name& contract, const extended_asset& expected_balance);
+	void send_validate(const name& type, const name& account, const extended_asset& expected_balance, const name& recipient);
 };

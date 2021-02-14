@@ -6,18 +6,18 @@ BOOST_FIXTURE_TEST_CASE(asserts_validate_test, arbitrage_tester)
 try {
     extended_asset iq_token_asset{asset::from_string("1000.000 IQ"), iq.contract};
 
-    ERROR("missing authority of mindswaparbi", arb.validate(N(alice), N(swap), N(mindswaparbi), iq_token_asset));
+    ERROR("missing authority of mindswaparbi", arb.validate(N(alice), N(swap), N(mindswaparbi), iq_token_asset, N(alice)));
     
     WASM_ASSERT("validate: account is not exist",
-                arb.validate(N(mindswaparbi), N(swap), N(notexisten), iq_token_asset));
+                arb.validate(N(mindswaparbi), N(swap), N(notexisten), iq_token_asset, N(alice)));
 
     extended_asset negative_iq_token_asset{asset::from_string("-1000.000 IQ"), iq.contract};
 
     WASM_ASSERT("validate: expected_balance should be positive",
-                arb.validate(N(mindswaparbi), N(swap), N(mindswaparbi), negative_iq_token_asset));
+                arb.validate(N(mindswaparbi), N(swap), N(mindswaparbi), negative_iq_token_asset, N(alice)));
 
      WASM_ASSERT("validate: swap validation failed for mindswaparbi 200.000 IQ!>=1000.000 IQ",
-                arb.validate(N(mindswaparbi), N(swap), N(mindswaparbi), iq_token_asset));
+                arb.validate(N(mindswaparbi), N(swap), N(mindswaparbi), iq_token_asset, N(alice)));
 }
 FC_LOG_AND_RETHROW()
 
@@ -25,7 +25,7 @@ BOOST_FIXTURE_TEST_CASE(validate_test, arbitrage_tester)
 try {
     extended_asset iq_token_asset{asset::from_string("200.000 IQ"), iq.contract};
 
-    SUCCESS(arb.validate(N(mindswaparbi), N(swap), N(mindswaparbi), iq_token_asset));
+    SUCCESS(arb.validate(N(mindswaparbi), N(swap), N(mindswaparbi), iq_token_asset, N(alice)));
 }
 FC_LOG_AND_RETHROW()
 

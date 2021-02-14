@@ -63,7 +63,7 @@ void arbitrage::arbitrage_order_trade(const name& account, const uint64_t& marke
 
 	//Send request to mindswap and validate income amount
 	send_transfer(amount_from.contract, MINDSWAP_ACCOUNT, amount_from.quantity, memo);
-	send_validate(name("swap"), get_self(), arbitrage_balance_to_before + amount_to);
+	send_validate(name("swap"), get_self(), arbitrage_balance_to_before + amount_to, account);
 
 	//Fill order and validate limit balance
 	if(order_type == BUY_TYPE)
@@ -75,10 +75,10 @@ void arbitrage::arbitrage_order_trade(const name& account, const uint64_t& marke
 	}
 	
 	send_transfer(amount_to.contract, LIMIT_ACCOUNT, amount_to.quantity, "");
-	send_validate(name("trade"), LIMIT_ACCOUNT, limit_balance_before + amount_to);
+	send_validate(name("trade"), LIMIT_ACCOUNT, limit_balance_before + amount_to, name());
 
 	//Final validation of arbitrage started balance
-	send_validate(name("final"), get_self(), arbitrage_balance_from_before);
+	send_validate(name("final"), get_self(), arbitrage_balance_from_before, name());
 }
 
 void arbitrage::arbitrage_pair_trade(const name& account, const uint64_t& market_id, const name& orders_type,
@@ -98,7 +98,7 @@ void arbitrage::arbitrage_pair_trade(const name& account, const uint64_t& market
 
 		//Send request to mindswap and validate income amount
 		send_transfer(amount_from.contract, MINDSWAP_ACCOUNT, amount_from.quantity, memo);
-		send_validate(name("swap"), get_self(), arbitrage_balance_to_before + amount_to);
+		send_validate(name("swap"), get_self(), arbitrage_balance_to_before + amount_to, account);
 
 		//Fill order and validate limit balance
 		if(orders_type == BUY_TYPE)
@@ -110,10 +110,10 @@ void arbitrage::arbitrage_pair_trade(const name& account, const uint64_t& market
 		}
 		
 		send_transfer(amount_to.contract, LIMIT_ACCOUNT, amount_to.quantity, "");
-		send_validate(name("trade"), LIMIT_ACCOUNT, limit_balance_before + amount_to);
+		send_validate(name("trade"), LIMIT_ACCOUNT, limit_balance_before + amount_to, name());
 
 		//Final validation of arbitrage started balance
-		send_validate(name("final"), get_self(), arbitrage_balance_from_before);
+		send_validate(name("final"), get_self(), arbitrage_balance_from_before, name());
 	}
 }
 
@@ -127,7 +127,7 @@ void arbitrage::validate(const name& type, const name& account, const extended_a
 
 	if(type == name("swap") && current_balance.quantity > expected_balance.quantity) {
 		check(is_account(recipient), "validate: recipient account is not exist");
-		// check();
+		check(is_withdraw_account_exist(recipient, expected_balance.get_extended_symbol()), "validate: withdraw account is not exist");
 		auto reward = current_balance - expected_balance;
 		send_transfer(reward.contract, recipient, reward.quantity, "");
 	}
@@ -351,7 +351,7 @@ void arbitrage::send_transfer(const name& contract, const name& to, const asset&
 		.send();
 }
 
-void arbitrage::send_validate(const name& type, const name& account, const extended_asset& expected_balance) {
-	action(permission_level{get_self(), name("active")}, get_self(), name("validate"), std::make_tuple(type, account, expected_balance))
+void arbitrage::send_validate(const name& type, const name& account, const extended_asset& expected_balance, const name& recipient) {
+	action(permission_level{get_self(), name("active")}, get_self(), name("validate"), std::make_tuple(type, account, expected_balance, recipient))
 		.send();
 }

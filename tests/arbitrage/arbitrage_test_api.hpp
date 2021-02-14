@@ -29,7 +29,8 @@ public:
 	action_result arbitrage_pair_trade(const name& signer, const name& account, const uint64_t& market_id, const name& orders_type, 
 									   const std::vector<uint64_t>& orders_ids,  const symbol_code& mindswap_pool);
 
-	action_result validate(const name& signer, const name& type, const name& account, const extended_asset& expected_balance);
+	action_result validate(const name& signer, const name& type, const name& account,
+						   const extended_asset& expected_balance, const name& recipient);
 
 	name contract;
 private:

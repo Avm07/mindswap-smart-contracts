@@ -25,12 +25,18 @@ try {
 	REQUIRE_MATCHING_OBJECT(arb_iq_balance, mvo()("balance", "200.000 IQ"));
     REQUIRE_MATCHING_OBJECT(arb_sys_balance, mvo()("balance", "200.000 SYS"));
 
+    auto alice_iq_balance = iq.get_account(N(alice), "3,IQ");
+	REQUIRE_MATCHING_OBJECT(alice_iq_balance, mvo()("balance", "100.000 IQ"));
+
     SUCCESS(arb.arbitrage_pair_trade(N(alice), N(alice), 0, N(sell), std::vector<uint64_t>{1000}, symbol::from_string("3,SYSIQ").to_symbol_code()));
 
     arb_iq_balance = iq.get_account(arb.contract, "3,IQ");
     arb_sys_balance = iq.get_account(arb.contract, "3,SYS");
-	REQUIRE_MATCHING_OBJECT(arb_iq_balance, mvo()("balance", "200.097 IQ"));
+	REQUIRE_MATCHING_OBJECT(arb_iq_balance, mvo()("balance", "200.000 IQ"));
     REQUIRE_MATCHING_OBJECT(arb_sys_balance, mvo()("balance", "200.000 SYS"));
+
+    alice_iq_balance = iq.get_account(N(alice), "3,IQ");
+	REQUIRE_MATCHING_OBJECT(alice_iq_balance, mvo()("balance", "100.097 IQ"));
 }
 FC_LOG_AND_RETHROW()
 

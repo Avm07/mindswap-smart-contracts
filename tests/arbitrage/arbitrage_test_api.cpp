@@ -51,9 +51,9 @@ action_result arbitrage_test_api::arbitrage_pair_trade(const name& signer, const
 	return push_action(signer, contract, N(arbpairtrade), mvo()("account", account)("market_id", market_id)("orders_type", orders_type)("orders_ids", orders_ids)("mindswap_pool", mindswap_pool));
 }
 
-action_result arbitrage_test_api::validate(const name& signer, const name& type, const name& account, const extended_asset& expected_balance)
+action_result arbitrage_test_api::validate(const name& signer, const name& type, const name& account, const extended_asset& expected_balance, const name& recipient)
 {
-	return push_action(signer, contract, N(validate), mvo()("type", type)("account", account)("expected_balance", expected_balance));
+	return push_action(signer, contract, N(validate), mvo()("type", type)("account", account)("expected_balance", expected_balance)("recipient", recipient));
 }
 
 action_result arbitrage_test_api::push_action(const name& signer, const name& cnt, const action_name& name, const variant_object& data) {
