@@ -47,44 +47,43 @@ void arbitrage::withdraw(const name& from, const name& to, const extended_asset&
 	send_transfer(quantity.contract, to, quantity.quantity, memo);
 }
 
-void arbitrage::arbitrage_order_trade(const uint64_t& market_id,
-									  const name& order_type,
-									  const uint64_t& order_id,
-									  const symbol_code& mindswap_pool) {
+void arbitrage::arbitrage_order_trade(const name& account, const uint64_t& market_id, const name& order_type,
+									  const uint64_t& order_id, const asset& amount, const symbol_code& mindswap_pool) {
+	require_auth(account);
 	check(is_valid_order_type(order_type), "arbitrage_order_trade: invalid order type");
 	check(is_valid_market_id(market_id), "arbitrage_order_trade: invalid market id");
 	check(is_valid_order_id(order_type, market_id, order_id), "arbitrage_order_trade: invalid order id");
+	check(is_valid_amount(order_type, market_id, order_id, amount), "arbitrage_order_trade: invalid amount");
 	check(is_pool_exist(mindswap_pool), "arbitrage_order_trade: mindswap pool is not exist");
 
-	auto [amount_from, amount_to, memo] = count_swap_amounts(mindswap_pool, order_type, market_id, order_id);
+	auto [amount_from, amount_to, memo] = count_swap_amounts(mindswap_pool, order_type, market_id, order_id, amount);
 	auto arbitrage_balance_from_before = get_balance(get_self(), amount_from.get_extended_symbol());
 	auto arbitrage_balance_to_before = get_balance(get_self(), amount_to.get_extended_symbol());
 	auto limit_balance_before = get_balance(LIMIT_ACCOUNT, amount_to.get_extended_symbol());
 
 	//Send request to mindswap and validate income amount
 	send_transfer(amount_from.contract, MINDSWAP_ACCOUNT, amount_from.quantity, memo);
-	send_validate(name("swap"), get_self(), arbitrage_balance_to_before + amount_to);
+	send_validate(name("swap"), get_self(), arbitrage_balance_to_before + amount_to, account);
 
 	//Fill order and validate limit balance
 	if(order_type == BUY_TYPE)
 	{
-		send_fill_buy_order(market_id, order_id);
+		send_part_fill_buy_order(market_id, order_id, amount);
 	}
 	else {
-		send_fill_sell_order(market_id, order_id);
+		send_part_fill_sell_order(market_id, order_id, amount);
 	}
 	
 	send_transfer(amount_to.contract, LIMIT_ACCOUNT, amount_to.quantity, "");
-	send_validate(name("trade"), LIMIT_ACCOUNT, limit_balance_before + amount_to);
+	send_validate(name("trade"), LIMIT_ACCOUNT, limit_balance_before + amount_to, name());
 
 	//Final validation of arbitrage started balance
-	send_validate(name("final"), get_self(), arbitrage_balance_from_before);
+	send_validate(name("final"), get_self(), arbitrage_balance_from_before, name());
 }
 
-void arbitrage::arbitrage_pair_trade(const uint64_t& market_id,
-									 const name& orders_type,
-									 const std::vector<uint64_t>& orders_ids,
-									 const symbol_code& mindswap_pool) {
+void arbitrage::arbitrage_pair_trade(const name& account, const uint64_t& market_id, const name& orders_type,
+									 const std::vector<uint64_t>& orders_ids, const symbol_code& mindswap_pool) {
+	require_auth(account);
 	check(is_valid_order_type(orders_type), "arbitrage_pair_trade: invalid orders type");
 	check(is_valid_market_id(market_id), "arbitrage_pair_trade: invalid market id");
 	check(is_valid_orders_ids(orders_type, market_id, orders_ids), "arbitrage_order_trade: invalid orders ids");
@@ -99,7 +98,7 @@ void arbitrage::arbitrage_pair_trade(const uint64_t& market_id,
 
 		//Send request to mindswap and validate income amount
 		send_transfer(amount_from.contract, MINDSWAP_ACCOUNT, amount_from.quantity, memo);
-		send_validate(name("swap"), get_self(), arbitrage_balance_to_before + amount_to);
+		send_validate(name("swap"), get_self(), arbitrage_balance_to_before + amount_to, account);
 
 		//Fill order and validate limit balance
 		if(orders_type == BUY_TYPE)
@@ -111,20 +110,27 @@ void arbitrage::arbitrage_pair_trade(const uint64_t& market_id,
 		}
 		
 		send_transfer(amount_to.contract, LIMIT_ACCOUNT, amount_to.quantity, "");
-		send_validate(name("trade"), LIMIT_ACCOUNT, limit_balance_before + amount_to);
+		send_validate(name("trade"), LIMIT_ACCOUNT, limit_balance_before + amount_to, name());
 
 		//Final validation of arbitrage started balance
-		send_validate(name("final"), get_self(), arbitrage_balance_from_before);
+		send_validate(name("final"), get_self(), arbitrage_balance_from_before, name());
 	}
 }
 
-void arbitrage::validate(const name& type, const name& account, const extended_asset& expected_balance) {
+void arbitrage::validate(const name& type, const name& account, const extended_asset& expected_balance, const name& recipient) {
 	require_auth(get_self());
 	check(is_account(account), "validate: account is not exist");
 	check(expected_balance.quantity.is_valid(), "validate: expected_balance is not valid");
 	check(expected_balance.quantity.amount > 0, "validate: expected_balance should be positive");
 	auto current_balance = get_balance(account, expected_balance.get_extended_symbol());
 	check(current_balance >= expected_balance, "validate: " + type.to_string() + " validation failed for " + account.to_string() + " " + current_balance.quantity.to_string() + "!>=" + expected_balance.quantity.to_string());
+
+	if(type == name("swap") && current_balance.quantity > expected_balance.quantity) {
+		check(is_account(recipient), "validate: recipient account is not exist");
+		check(is_withdraw_account_exist(recipient, expected_balance.get_extended_symbol()), "validate: withdraw account is not exist");
+		auto reward = current_balance - expected_balance;
+		send_transfer(reward.contract, recipient, reward.quantity, "");
+	}
 }
 									
 void arbitrage::on_transfer(const name& from, const name& to, const asset& quantity, const std::string& memo) {
@@ -191,10 +197,29 @@ arbitrage::count_swap_amounts(const symbol_code& mindswap_pool, const name& orde
 		auto amount_from = extended_asset(order.balance, market.token1.get_contract());
 		auto amount_to = count_amount(amount_from, extended_asset(order.price, market.token2.get_contract()));
 		auto memo = create_request_memo(mindswap_pool, amount_to.quantity);
-		//For cave man testing
-		// check(false, "amount_from:" + amount_from.quantity.to_string() + "@" + amount_from.contract.to_string());
-		// check(false, "amount_to:" + amount_to.quantity.to_string() + "@" + amount_to.contract.to_string());
-		// check(false, "memo:" + memo);
+		return std::make_tuple(amount_from, amount_to, memo);
+	}
+}
+
+std::tuple<extended_asset, extended_asset, std::string>
+arbitrage::count_swap_amounts(const symbol_code& mindswap_pool, const name& order_type, const uint64_t& market_id, const uint64_t& id, const asset& amount) {
+	if (order_type == BUY_TYPE) {
+		buy_orders _buy_orders(LIMIT_ACCOUNT, market_id);
+		const auto& order = _buy_orders.get(id, "count_swap_amounts: order not found");
+		check(is_valid_pool(mindswap_pool, order.balance.symbol.code(), order.price.symbol.code()), "count_swap_amounts: pool is not valid");
+		auto market = get_market(market_id);
+		auto amount_to = extended_asset(amount, market.token1.get_contract());
+		auto amount_from = count_amount(amount_to, extended_asset(order.price, market.token2.get_contract()));
+		auto memo = create_request_memo(mindswap_pool, amount);
+		return std::make_tuple(amount_from, amount_to, memo);
+	} else {
+		sell_orders _sell_orders(LIMIT_ACCOUNT, market_id);
+		const auto& order = _sell_orders.get(id, "count_swap_amounts: order not found");
+		check(is_valid_pool(mindswap_pool, order.price.symbol.code(), order.balance.symbol.code()), "count_swap_amounts: pool is not valid");
+		auto market = get_market(market_id);
+		auto amount_from = extended_asset(amount, market.token1.get_contract());
+		auto amount_to = count_amount(amount_from, extended_asset(order.price, market.token2.get_contract()));
+		auto memo = create_request_memo(mindswap_pool, amount_to.quantity);
 		return std::make_tuple(amount_from, amount_to, memo);
 	}
 }
@@ -267,6 +292,18 @@ bool arbitrage::is_valid_order_id(const name& order_type, const uint64_t& market
 	}
 }
 
+bool arbitrage::is_valid_amount(const name& order_type, const uint64_t& market_id, const uint64_t& id, const asset& amount) {
+	if (order_type == BUY_TYPE) {
+		buy_orders _buy_orders(LIMIT_ACCOUNT, market_id);
+		const auto& ord = _buy_orders.get(id, "is_valid_amount: order not found");
+		return (amount.is_valid() && amount.amount > 0 && ord.balance.symbol == amount.symbol && ord.balance >= amount) ? true : false;
+	} else {
+		sell_orders _sell_orders(LIMIT_ACCOUNT, market_id);
+		const auto& ord = _sell_orders.get(id, "is_valid_amount: order not found");
+		return (amount.is_valid() && amount.amount > 0 && ord.balance.symbol == amount.symbol && ord.balance >= amount) ? true : false;
+	}
+}
+
 bool arbitrage::is_valid_orders_ids(const name& order_type, const uint64_t& market_id, const std::vector<uint64_t>& ids) {
 	for (const auto& id : ids) {
 		if (!is_valid_order_id(order_type, market_id, id)) {
@@ -289,6 +326,16 @@ bool arbitrage::is_valid_pool(const symbol_code& mindswap_pool, const symbol_cod
 	return (pool == to_pool_name(symb1, symb2) || pool == to_pool_name(symb2, symb1)) ? true : false;
 }
 
+void arbitrage::send_part_fill_buy_order(const uint64_t& market_id, const uint64_t& id, const asset& amount) {
+	action(permission_level{get_self(), name("active")}, LIMIT_ACCOUNT, name("ptfillbuyord"), std::make_tuple(market_id, id, amount))
+		.send();
+}
+
+void arbitrage::send_part_fill_sell_order(const uint64_t& market_id, const uint64_t& id, const asset& amount) {
+	action(permission_level{get_self(), name("active")}, LIMIT_ACCOUNT, name("ptfillsellord"), std::make_tuple(market_id, id, amount))
+		.send();
+}
+
 void arbitrage::send_fill_buy_order(const uint64_t& market_id, const uint64_t& id) {
 	action(permission_level{get_self(), name("active")}, LIMIT_ACCOUNT, name("fillbuyord"), std::make_tuple(market_id, id))
 		.send();
@@ -304,7 +351,7 @@ void arbitrage::send_transfer(const name& contract, const name& to, const asset&
 		.send();
 }
 
-void arbitrage::send_validate(const name& type, const name& account, const extended_asset& expected_balance) {
-	action(permission_level{get_self(), name("active")}, get_self(), name("validate"), std::make_tuple(type, account, expected_balance))
+void arbitrage::send_validate(const name& type, const name& account, const extended_asset& expected_balance, const name& recipient) {
+	action(permission_level{get_self(), name("active")}, get_self(), name("validate"), std::make_tuple(type, account, expected_balance, recipient))
 		.send();
 }

@@ -57,7 +57,8 @@ void limit::create_limit_buy(const name& owner, const extended_asset& volume, co
 	check(price.quantity.symbol.is_valid(), "create_limit_buy: price symbol is not valid");
 	check(volume.quantity.amount > 0, "create_limit_buy: volume should be positive");
 	check(price.quantity.amount > 0, "create_limit_buy: price should be positive");
-	check(is_deposit_account_exist(owner, volume.get_extended_symbol()), to_string(volume.get_extended_symbol()) + " deposit is not opened");
+	check(is_deposit_account_exist(owner, volume.get_extended_symbol()),
+		  to_string(volume.get_extended_symbol()) + " deposit is not opened");
 	check(is_deposit_account_exist(owner, price.get_extended_symbol()), to_string(price.get_extended_symbol()) + " deposit is not opened");
 
 	auto amount = count_amount(volume, price);
@@ -89,7 +90,8 @@ void limit::create_limit_sell(const name& owner, const extended_asset& volume, c
 	check(price.quantity.symbol.is_valid(), "create_limit_sell: price symbol is not valid");
 	check(volume.quantity.amount > 0, "create_limit_sell: volume should be positive");
 	check(price.quantity.amount > 0, "create_limit_sell: price should be positive");
-	check(is_deposit_account_exist(owner, volume.get_extended_symbol()), to_string(volume.get_extended_symbol()) + " deposit is not opened");
+	check(is_deposit_account_exist(owner, volume.get_extended_symbol()),
+		  to_string(volume.get_extended_symbol()) + " deposit is not opened");
 	check(is_deposit_account_exist(owner, price.get_extended_symbol()), to_string(price.get_extended_symbol()) + " deposit is not opened");
 
 	sub_balance(owner, volume);
@@ -141,12 +143,58 @@ void limit::close_limit_sell(const uint64_t& market_id, const uint64_t& id) {
 
 	require_auth(it->owner);
 
-	extended_asset amount(it->balance, token2.get_contract());
+	extended_asset amount(it->balance, token1.get_contract());
 
 	sub_balance_in_orders(it->owner, amount);
 	add_balance(it->owner, amount, same_payer);
 
 	_sell_orders.erase(it);
+}
+
+void limit::part_fill_buy_order(const uint64_t& market_id, const uint64_t& id, const asset& amount) {
+	require_auth(ARBITRAGE_ACCOUNT);
+
+	buy_orders _buy_orders(get_self(), market_id);
+	const auto& obj = _buy_orders.get(id, "part_fill_buy_order: order is not exist");
+	auto market_obj = get_market(market_id);
+
+	auto deal_vol = extended_asset(amount, market_obj.token1.get_contract());
+	auto deal_price = extended_asset(obj.price, market_obj.token2.get_contract());
+	auto deal_amount = count_amount(deal_vol, deal_price);
+
+	add_balance(obj.owner, deal_vol, same_payer);
+	sub_balance_in_orders(obj.owner, deal_amount);
+
+	send_transfer(deal_amount.contract, ARBITRAGE_ACCOUNT, deal_amount.quantity, "");
+
+	if (obj.balance == amount) {
+		_buy_orders.erase(obj);
+	} else {
+		_buy_orders.modify(obj, same_payer, [&](auto& a) { a.balance -= amount; });
+	}
+}
+
+void limit::part_fill_sell_order(const uint64_t& market_id, const uint64_t& id, const asset& amount) {
+	require_auth(ARBITRAGE_ACCOUNT);
+
+	sell_orders _sell_orders(get_self(), market_id);
+	const auto& obj = _sell_orders.get(id, "part_fill_sell_order: order is not exist");
+	auto market_obj = get_market(market_id);
+
+	auto deal_vol = extended_asset(amount, market_obj.token1.get_contract());
+	auto deal_price = extended_asset(obj.price, market_obj.token2.get_contract());
+	auto deal_amount = count_amount(deal_vol, deal_price);
+
+	add_balance(obj.owner, deal_amount, same_payer);
+	sub_balance_in_orders(obj.owner, deal_vol);
+
+	send_transfer(deal_vol.contract, ARBITRAGE_ACCOUNT, deal_vol.quantity, "");
+
+	if (obj.balance == amount) {
+		_sell_orders.erase(obj);
+	} else {
+		_sell_orders.modify(obj, same_payer, [&](auto& a) { a.balance -= amount; });
+	}
 }
 
 void limit::fill_buy_order(const uint64_t& market_id, const uint64_t& id) {
@@ -189,12 +237,11 @@ void limit::on_transfer(const name& from, const name& to, const asset& quantity,
 	if (to == get_self()) {
 		if (from == ARBITRAGE_ACCOUNT) {
 			return;
-		}
-		else {
+		} else {
 			extended_asset value(quantity, get_first_receiver());
 			check(is_deposit_account_exist(from, value.get_extended_symbol()), "on_transfer: deposit account is not exist");
 			add_balance(from, value, same_payer);
-		}	
+		}
 	}
 }
 

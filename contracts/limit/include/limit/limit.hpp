@@ -34,11 +34,13 @@ public:
 	[[eosio::action("clslmtsell")]] void close_limit_sell(const uint64_t& market_id, const uint64_t& id);
 
 	//For arbitrage trading
+	[[eosio::action("ptfillbuyord")]] void part_fill_buy_order(const uint64_t& market_id, const uint64_t& id, const asset& amount);
+
+	[[eosio::action("ptfillsellord")]] void part_fill_sell_order(const uint64_t& market_id, const uint64_t& id, const asset& amount);
+
 	[[eosio::action("fillbuyord")]] void fill_buy_order(const uint64_t& market_id, const uint64_t& id);
 
 	[[eosio::action("fillsellord")]] void fill_sell_order(const uint64_t& market_id, const uint64_t& id);
-
-	// [[eosio::action("fullfillpair")]] void full_fill_pair(const uint64_t& market_id, const uint64_t& id);
 
 	[[eosio::on_notify("*::transfer")]] void on_transfer(const name& from, const name& to, const asset& quantity, const std::string& memo);
 

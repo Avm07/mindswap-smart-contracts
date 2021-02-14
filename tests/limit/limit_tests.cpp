@@ -7,4 +7,6 @@
 #include <limit/suites/fill_sell_order_tests.hpp>
 #include <limit/suites/on_transfer_tests.hpp>
 #include <limit/suites/open_tests.hpp>
+#include <limit/suites/part_fill_buy_order_tests.hpp>
+#include <limit/suites/part_fill_sell_order_tests.hpp>
 #include <limit/suites/withdraw_tests.hpp>

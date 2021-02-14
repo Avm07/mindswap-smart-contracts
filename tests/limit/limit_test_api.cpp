@@ -79,6 +79,16 @@ action_result limit_test_api::close_limit_sell(const name& signer, const uint64_
 	return push_action(signer, contract, N(clslmtsell), mvo()("market_id", market_id)("id", id));
 }
 
+action_result limit_test_api::part_fill_buy_order(const name& signer, const uint64_t& market_id, const uint64_t& id, const asset& amount)
+{
+	return push_action(signer, contract, N(ptfillbuyord), mvo()("market_id", market_id)("id", id)("amount", amount));
+}
+
+action_result limit_test_api::part_fill_sell_order(const name& signer, const uint64_t& market_id, const uint64_t& id, const asset& amount)
+{
+	return push_action(signer, contract, N(ptfillsellord), mvo()("market_id", market_id)("id", id)("amount", amount));
+}	
+
 action_result limit_test_api::fill_buy_order(const name& signer, const uint64_t& market_id, const uint64_t& id)
 {
 	return push_action(signer, contract, N(fillbuyord), mvo()("market_id", market_id)("id", id));
