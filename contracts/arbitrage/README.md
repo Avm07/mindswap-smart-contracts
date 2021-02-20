@@ -90,7 +90,7 @@ cleos -u https://eos.greymass.com/ push transaction
         "from": "usera",
         "to": "userb",
         "quantity": {
-            "contract": "token.pcash",
+            "contract": "eosio.token",
             "asset": "0.0100 EOS"
         },
         "memo": ""
@@ -198,7 +198,7 @@ cleos -u https://eos.greymass.com/ push transaction
         "type": "swap",
         "account": "mindswaparbi",
         "expected_balance": {
-            "contract": "token.pcash",
+            "contract": "eosio.token",
             "asset": "0.0100 EOS"
         }
         "recipient": "usera"
